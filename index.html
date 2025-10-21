@@ -59,5 +59,25 @@
     </div>
 
     <script type="module" src="scripts/app.js"></script>
+    <script>
+// Debug script
+console.log('Page chargée');
+if (window.location.hostname.includes('vercel.app')) {
+    console.log('Sur Vercel');
+    
+    // Tester l'accès aux fichiers
+    fetch('/data/malagasy-bible/Matio.txt')
+        .then(response => {
+            console.log('Statut Matio.txt:', response.status);
+            return response.text();
+        })
+        .then(text => {
+            console.log('Premières 200 caractères de Matio:', text.substring(0, 200));
+        })
+        .catch(error => {
+            console.error('Erreur fetch Matio:', error);
+        });
+}
+</script>
 </body>
 </html>

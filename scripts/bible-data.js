@@ -4,7 +4,7 @@ export const bibleData = {
     french: {}
 };
 
-// Liste complète des livres de la Bible en malgache (Ancien + Nouveau Testament)
+// Liste complète des livres de la Bible en malgache
 export const books = [
     // Ancien Testament
     "Genesisy", "Eksodosy", "Levitikosy", "Nomery", "Deuteronomy", "Josoa", "Mpitsara", "Rota",
@@ -22,26 +22,7 @@ export const books = [
 
 // Mapping des livres malgaches vers français
 export const bookNames = {
-    malagasy: {
-        // Ancien Testament
-        "Genesisy": "Genesisy", "Eksodosy": "Eksodosy", "Levitikosy": "Levitikosy", "Nomery": "Nomery",
-        "Deuteronomy": "Deuteronomy", "Josoa": "Josoa", "Mpitsara": "Mpitsara", "Rota": "Rota",
-        "1 Samoela": "1 Samoela", "2 Samoela": "2 Samoela", "1 Mpanjaka": "1 Mpanjaka", "2 Mpanjaka": "2 Mpanjaka",
-        "1 Tantara": "1 Tantara", "2 Tantara": "2 Tantara", "Esdrasa": "Esdrasa", "Nehemia": "Nehemia",
-        "Estera": "Estera", "Joba": "Joba", "Salamo": "Salamo", "Ohabolana": "Ohabolana", "Mpitoriteny": "Mpitoriteny",
-        "Tononkira i Salomona": "Tononkira i Salomona", "Isaia": "Isaia", "Jeremia": "Jeremia", "Fitoriana": "Fitoriana",
-        "Ezekiela": "Ezekiela", "Daniela": "Daniela", "Hosea": "Hosea", "Joela": "Joela", "Amosa": "Amosa",
-        "Obadia": "Obadia", "Jona": "Jona", "Mika": "Mika", "Nahoma": "Nahoma", "Habakoka": "Habakoka",
-        "Zefania": "Zefania", "Hagay": "Hagay", "Zakaria": "Zakaria", "Malakia": "Malakia",
-        
-        // Nouveau Testament
-        "Matio": "Matio", "Marka": "Marka", "Lioka": "Lioka", "Jaona": "Jaona", "Asan'ny Apostoly": "Asan'ny Apostoly",
-        "Romana": "Romana", "1 Korintiana": "1 Korintiana", "2 Korintiana": "2 Korintiana", "Galatiana": "Galatiana",
-        "Efesiana": "Efesiana", "Filipiana": "Filipiana", "Kolosiana": "Kolosiana", "1 Tesaloniana": "1 Tesaloniana",
-        "2 Tesaloniana": "2 Tesaloniana", "1 Timoty": "1 Timoty", "2 Timoty": "2 Timoty", "Titosy": "Titosy",
-        "Filemona": "Filemona", "Hebreo": "Hebreo", "Jakoba": "Jakoba", "1 Petera": "1 Petera", "2 Petera": "2 Petera",
-        "1 Jaona": "1 Jaona", "2 Jaona": "2 Jaona", "3 Jaona": "3 Jaona", "Joda": "Joda", "Apokalypsy": "Apokalypsy"
-    },
+    malagasy: {},
     french: {
         // Ancien Testament
         "Genesisy": "Genèse", "Eksodosy": "Exode", "Levitikosy": "Lévitique", "Nomery": "Nombres",
@@ -64,11 +45,16 @@ export const bookNames = {
     }
 };
 
+// Initialiser les noms malgaches
+books.forEach(book => {
+    bookNames.malagasy[book] = book;
+});
+
 export async function initializeApp() {
     await loadMalagasyBible();
     await loadFrenchBibleMock();
     populateBookSelect();
-    populateChapterSelect('Genesisy');
+    populateChapterSelect('Matio');
 }
 
 async function loadMalagasyBible() {
@@ -78,13 +64,17 @@ async function loadMalagasyBible() {
         for (const book of books) {
             const fileName = `${book}.txt`;
             try {
-                // Chemin corrigé pour Vercel
                 const response = await fetch(`/data/malagasy-bible/${fileName}`);
                 if (response.ok) {
                     const text = await response.text();
                     const parsedData = parseBibleText(text, book);
                     bibleData.malagasy[book] = parsedData;
                     console.log(`✓ ${book} chargé: ${Object.keys(parsedData).length} chapitres`);
+                    
+                    // Afficher un exemple pour vérifier
+                    if (book === 'Matio' && parsedData[1]) {
+                        console.log('Exemple Matio 1:1:', parsedData[1][1]);
+                    }
                 } else {
                     console.warn(`✗ Fichier non trouvé: ${fileName}`);
                     bibleData.malagasy[book] = generateMockChapters(book);
@@ -94,7 +84,7 @@ async function loadMalagasyBible() {
                 bibleData.malagasy[book] = generateMockChapters(book);
             }
         }
-        console.log('Bible malgache chargée avec succès', bibleData.malagasy);
+        console.log('Bible malgache complètement chargée', bibleData.malagasy);
     } catch (error) {
         console.error('Erreur lors du chargement de la Bible malgache:', error);
     }
@@ -103,144 +93,70 @@ async function loadMalagasyBible() {
 function parseBibleText(text, bookName) {
     const chapters = {};
     const lines = text.split('\n');
-    let currentChapter = 1;
-    let currentVerse = 1;
-    let currentVerses = {};
+    
+    console.log(`Parsing ${bookName}, ${lines.length} lignes`);
 
-    lines.forEach((line, index) => {
+    lines.forEach((line, lineIndex) => {
         line = line.trim();
         if (!line) return;
 
-        // Nettoyer la ligne des caractères spéciaux
-        let cleanLine = line.replace(/[´†ª]/g, ' ').trim();
-        
-        // Chercher la référence biblique à la fin (Livre chapitre:verset)
-        const referenceMatch = cleanLine.match(/\(([^)]+\s+\d+:\d+)\)\s*$/);
-        if (referenceMatch) {
-            const reference = referenceMatch[1];
-            const verseMatch = reference.match(/(\d+):(\d+)/);
+        // Format: « Texte du verset » (Livre chapitre:verset)
+        const verseMatch = line.match(/«\s*(.*?)\s*»\s*\(([^)]+)\)/);
+        if (verseMatch) {
+            const verseText = verseMatch[1].trim();
+            const reference = verseMatch[2];
             
-            if (verseMatch) {
-                const chapter = parseInt(verseMatch[1]);
-                const verse = parseInt(verseMatch[2]);
+            // Extraire chapitre et verset de la référence
+            const refMatch = reference.match(/(\d+):(\d+)/);
+            if (refMatch) {
+                const chapter = parseInt(refMatch[1]);
+                const verse = parseInt(refMatch[2]);
                 
-                // Si nouveau chapitre, sauvegarder le précédent
-                if (chapter !== currentChapter && Object.keys(currentVerses).length > 0) {
-                    chapters[currentChapter] = { ...currentVerses };
-                    currentVerses = {};
+                if (!chapters[chapter]) {
+                    chapters[chapter] = {};
                 }
                 
-                currentChapter = chapter;
-                currentVerse = verse;
+                // Nettoyer le texte des notes entre crochets
+                let cleanText = verseText;
                 
-                // Extraire le texte du verset (tout avant la référence)
-                let verseText = cleanLine.substring(0, referenceMatch.index).trim();
+                // Gérer les notes comme [*Gr. Arama] - les garder pour l'instant
+                // cleanText = cleanText.replace(/\[\*[^\]]*\]/g, '');
                 
-                // Nettoyer le texte
-                verseText = cleanVerseText(verseText);
-                
-                if (verseText) {
-                    currentVerses[verse] = verseText;
+                if (cleanText) {
+                    chapters[chapter][verse] = cleanText;
+                    if (lineIndex < 5) { // Log les 5 premiers versets pour debug
+                        console.log(`  ${bookName} ${chapter}:${verse} -> "${cleanText.substring(0, 30)}..."`);
+                    }
                 }
             }
         } else {
-            // Si pas de référence, chercher un numéro de verset au début
-            const verseStartMatch = cleanLine.match(/^(\d+)[\.\s]+(.+)$/);
-            if (verseStartMatch) {
-                const verse = parseInt(verseStartMatch[1]);
-                let verseText = verseStartMatch[2].trim();
+            // Essayer un format alternatif sans guillemets
+            const altMatch = line.match(/(.*?)\s*\(([^)]+)\)/);
+            if (altMatch) {
+                const verseText = altMatch[1].trim();
+                const reference = altMatch[2];
                 
-                verseText = cleanVerseText(verseText);
-                
-                if (verseText) {
-                    currentVerses[verse] = verseText;
-                }
-                currentVerse = verse;
-            } else if (Object.keys(currentVerses).length > 0) {
-                // Continuer le verset précédent
-                const lastVerse = Math.max(...Object.keys(currentVerses).map(Number));
-                let additionalText = cleanVerseText(cleanLine);
-                if (additionalText) {
-                    currentVerses[lastVerse] += ' ' + additionalText;
+                const refMatch = reference.match(/(\d+):(\d+)/);
+                if (refMatch) {
+                    const chapter = parseInt(refMatch[1]);
+                    const verse = parseInt(refMatch[2]);
+                    
+                    if (!chapters[chapter]) {
+                        chapters[chapter] = {};
+                    }
+                    
+                    if (verseText) {
+                        chapters[chapter][verse] = verseText;
+                    }
                 }
             }
         }
     });
 
-    // Sauvegarder le dernier chapitre
-    if (Object.keys(currentVerses).length > 0) {
-        chapters[currentChapter] = currentVerses;
-    }
-
-    // Si aucun chapitre n'a été trouvé, essayer une autre méthode
-    if (Object.keys(chapters).length === 0) {
-        return parseAlternativeFormat(text, bookName);
-    }
-
     return chapters;
 }
 
-function cleanVerseText(text) {
-    if (!text) return '';
-    
-    // Supprimer les numéros de verset au début
-    let cleanText = text.replace(/^\d+[\.\s]*/, '');
-    
-    // Supprimer les notes entre crochets
-    cleanText = cleanText.replace(/\[\*[^\]]*\]/g, '');
-    
-    // Supprimer les caractères spéciaux résiduels
-    cleanText = cleanText.replace(/[´†ª]/g, '').trim();
-    
-    // Supprimer les espaces multiples
-    cleanText = cleanText.replace(/\s+/g, ' ');
-    
-    return cleanText;
-}
-
-function parseAlternativeFormat(text, bookName) {
-    const chapters = {};
-    const lines = text.split('\n');
-    let currentChapter = 1;
-    let currentVerses = {};
-
-    lines.forEach(line => {
-        line = line.trim();
-        if (!line) return;
-
-        // Chercher les références intégrées dans le texte
-        const referenceMatch = line.match(/(\d+):(\d+)/);
-        if (referenceMatch) {
-            const chapter = parseInt(referenceMatch[1]);
-            const verse = parseInt(referenceMatch[2]);
-            
-            if (chapter !== currentChapter && Object.keys(currentVerses).length > 0) {
-                chapters[currentChapter] = { ...currentVerses };
-                currentVerses = {};
-            }
-            
-            currentChapter = chapter;
-            
-            // Extraire le texte autour de la référence
-            const verseText = line.replace(/\([^)]+\)/g, '') // Enlever les parenthèses
-                                 .replace(/\d+:\d+/g, '')    // Enlever les références
-                                 .replace(/[´†ª]/g, '')      // Enlever les symboles
-                                 .trim();
-            
-            if (verseText) {
-                currentVerses[verse] = verseText;
-            }
-        }
-    });
-
-    if (Object.keys(currentVerses).length > 0) {
-        chapters[currentChapter] = currentVerses;
-    }
-
-    return chapters;
-}
-
-// Version française mock améliorée
+// Version française mock
 async function loadFrenchBibleMock() {
     console.log('Chargement de la Bible française mock...');
     books.forEach(book => {
@@ -257,13 +173,7 @@ function generateMockChapters(book) {
         chapters[i] = {};
         const verseCount = getRealisticVerseCount(book, i);
         for (let j = 1; j <= verseCount; j++) {
-            // Utiliser le vrai texte malgache si disponible
-            const malagasyText = bibleData.malagasy[book] && bibleData.malagasy[book][i] && bibleData.malagasy[book][i][j];
-            if (malagasyText) {
-                chapters[i][j] = malagasyText;
-            } else {
-                chapters[i][j] = `${bookNames.french[book]} ${i}:${j} - Texte malgache`;
-            }
+            chapters[i][j] = `Texte malgache de ${book} ${i}:${j}`;
         }
     }
     return chapters;
@@ -309,14 +219,7 @@ function getRealisticChapterCounts(book) {
 }
 
 function getRealisticVerseCount(book, chapter) {
-    // Pour simplifier, retourner un nombre fixe selon le livre
-    const averages = {
-        "Salamo": 10, // Les Psaumes sont courts
-        "Ohabolana": 20, // Les Proverbes ont des versets courts
-        "Matio": 25, "Marka": 30, "Lioka": 30, "Jaona": 25
-    };
-    
-    return averages[book] || 30;
+    return 30;
 }
 
 function populateBookSelect() {
@@ -408,21 +311,26 @@ export async function loadVerses(book, chapter) {
 
     displayVerses('malagasy', malagasyVerses, book, chapter);
     displayVerses('french', frenchVerses, book, chapter);
-    syncScroll();
+    
+    // Forcer le re-rendu si nécessaire
+    setTimeout(syncScroll, 100);
 }
 
 function displayVerses(version, verses, book, chapter) {
     const container = document.getElementById(`${version}-verses`);
-    if (!container) return;
-
-    container.innerHTML = '';
-
-    if (Object.keys(verses).length === 0) {
-        container.innerHTML = `<p class="no-verses">Aucun verset trouvé pour ${bookNames[version][book]} ${chapter}</p>`;
+    if (!container) {
+        console.error(`Container non trouvé: ${version}-verses`);
         return;
     }
 
-    const versionTitle = version === 'malagasy' ? 'Bible Malgache' : 'Bible Française (LSG)';
+    container.innerHTML = '';
+
+    if (!verses || Object.keys(verses).length === 0) {
+        container.innerHTML = `<p class="no-verses">Aucun verset trouvé pour ${bookNames[version][book]} ${chapter}</p>`;
+        console.warn(`Aucun verset pour ${book} ${chapter} (${version})`);
+        return;
+    }
+
     const bookName = bookNames[version][book];
 
     const titleElement = document.createElement('h4');
@@ -430,7 +338,10 @@ function displayVerses(version, verses, book, chapter) {
     titleElement.textContent = `${bookName} - Chapitre ${chapter}`;
     container.appendChild(titleElement);
 
-    Object.keys(verses).sort((a, b) => a - b).forEach(verseNumber => {
+    // Trier les versets par numéro
+    const verseNumbers = Object.keys(verses).map(Number).sort((a, b) => a - b);
+    
+    verseNumbers.forEach(verseNumber => {
         const verseElement = document.createElement('div');
         verseElement.className = 'verse';
         verseElement.dataset.verseId = `${book}-${chapter}-${verseNumber}`;
@@ -444,13 +355,18 @@ function displayVerses(version, verses, book, chapter) {
         verseElement.innerHTML = verseContent;
         container.appendChild(verseElement);
     });
+    
+    console.log(`Affiché ${verseNumbers.length} versets pour ${book} ${chapter} (${version})`);
 }
 
 function syncScroll() {
     const malagasyContainer = document.getElementById('malagasy-verses');
     const frenchContainer = document.getElementById('french-verses');
 
-    if (!malagasyContainer || !frenchContainer) return;
+    if (!malagasyContainer || !frenchContainer) {
+        console.warn('Containers de défilement non trouvés');
+        return;
+    }
 
     let isScrolling = false;
 
@@ -470,6 +386,8 @@ function syncScroll() {
     frenchContainer.addEventListener('scroll', () => handleScroll(frenchContainer, malagasyContainer));
 }
 
+// Debug: Vérifier que l'app s'initialise
 document.addEventListener('DOMContentLoaded', () => {
+    console.log('DOM chargé, initialisation de l app...');
     initializeApp();
 });
