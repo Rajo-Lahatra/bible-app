@@ -1,8 +1,13 @@
 // Configuration Supabase
-const SUPABASE_URL = 'https://kezxiohmrslvsdlkkcor.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imtlenhpb2htcnNsdnNkbGtrY29yIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjEwNjUxODUsImV4cCI6MjA3NjY0MTE4NX0.QaR6V4cjQdUsJjuCcXC3S4tSckk-ChyscCBf2cxYu4E';
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
 export async function initSupabase() {
+    if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+        console.warn('Variables Supabase non configurées');
+        return null;
+    }
+
     const { createClient } = supabase;
     return createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 }
