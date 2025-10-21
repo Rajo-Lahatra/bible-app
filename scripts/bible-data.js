@@ -4,7 +4,7 @@ export const bibleData = {
     french: {}
 };
 
-// Liste complète des livres de la Bible en malgache - CORRIGÉE
+// Liste complète des livres de la Bible en malgache
 export const books = [
     // Ancien Testament
     "Genesisy", "Eksodosy", "Levitikosy", "Nomery", "Deotoronomia", "Josoa", "Mpitsara", "Rota",
@@ -20,7 +20,7 @@ export const books = [
     "III Jaona", "Joda", "Apokalipsy"
 ];
 
-// Mapping des livres - CORRIGÉ
+// Mapping des livres
 export const bookNames = {
     malagasy: {},
     french: {
@@ -45,6 +45,79 @@ export const bookNames = {
     }
 };
 
+// Mapping complet des codes français vers les noms malgaches basé sur les fichiers
+export const frenchFileMapping = {
+    // Ancien Testament
+    "002_GEN": "Genesisy",
+    "003_EXO": "Eksodosy", 
+    "004_LEV": "Levitikosy",
+    "005_NUM": "Nomery",
+    "006_DEU": "Deotoronomia",
+    "007_JOS": "Josoa",
+    "008_JDG": "Mpitsara",
+    "009_RUT": "Rota",
+    "010_1SA": "I Samoela",
+    "011_2SA": "II Samoela",
+    "012_1KI": "I Mpanjaka",
+    "013_2KI": "II Mpanjaka",
+    "014_1CH": "I Tantara",
+    "015_2CH": "II Tantara",
+    "016_EZR": "Ezra",
+    "017_NEH": "Nehemia",
+    "018_EST": "Estera",
+    "019_JOB": "Joba",
+    "020_PSA": "Salamo",
+    "021_PRO": "Ohabolana",
+    "022_ECC": "Mpitoriteny",
+    "023_SNG": "Tonon-kiran'i Solomona",
+    "024_ISA": "Isaia",
+    "025_JER": "Jeremia",
+    "026_LAM": "Fitomaniana",
+    "027_EZK": "Ezekiela",
+    "028_DAN": "Daniela",
+    "029_HOS": "Hosea",
+    "030_JOL": "Joela",
+    "031_AMO": "Amosa",
+    "032_OBA": "Obadia",
+    "033_JON": "Jona",
+    "034_MIC": "Mika",
+    "035_NAM": "Nahoma",
+    "036_HAB": "Habakoka",
+    "037_ZEP": "Zefania",
+    "038_HAG": "Hagay",
+    "039_ZEC": "Zakaria",
+    "040_MAL": "Malakia",
+    
+    // Nouveau Testament
+    "070_MAT": "Matio",
+    "071_MRK": "Marka",
+    "072_LUK": "Lioka",
+    "073_JHN": "Jaona",
+    "074_ACT": "Asan'ny Apostoly",
+    "075_ROM": "Romana",
+    "076_1CO": "I Korintiana",
+    "077_2CO": "II Korintiana",
+    "078_GAL": "Galatiana",
+    "079_EPH": "Efesiana",
+    "080_PHP": "Filipiana",
+    "081_COL": "Kolosiana",
+    "082_1TH": "I Tesaloniana",
+    "083_2TH": "II Tesaloniana",
+    "084_1TI": "I Timoty",
+    "085_2TI": "II Timoty",
+    "086_TIT": "Titosy",
+    "087_PHM": "Filemona",
+    "088_HEB": "Hebreo",
+    "089_JAS": "Jakoba",
+    "090_1PE": "I Petera",
+    "091_2PE": "II Petera",
+    "092_1JN": "I Jaona",
+    "093_2JN": "II Jaona",
+    "094_3JN": "III Jaona",
+    "095_JUD": "Joda",
+    "096_REV": "Apokalipsy"
+};
+
 // Initialiser les noms malgaches
 books.forEach(book => {
     bookNames.malagasy[book] = book;
@@ -54,7 +127,7 @@ books.forEach(book => {
 export async function initializeApp() {
     console.log('Initialisation de l application...');
     await loadMalagasyBible();
-    await loadFrenchBibleMock();
+    await loadFrenchBible();
     populateBookSelect();
     populateChapterSelect('Matio');
 }
@@ -112,6 +185,211 @@ async function loadMalagasyBible() {
     }
 }
 
+// Nouvelle fonction pour charger la Bible française
+async function loadFrenchBible() {
+    try {
+        console.log('Début du chargement de la Bible française...');
+        
+        // Créer une liste de tous les fichiers français à charger
+        const frenchFilesToLoad = generateFrenchFileList();
+        
+        console.log(`Nombre de fichiers français à charger: ${frenchFilesToLoad.length}`);
+        
+        let loadedCount = 0;
+        let errorCount = 0;
+        
+        for (const fileInfo of frenchFilesToLoad) {
+            const { fileName, malagasyBook, chapter } = fileInfo;
+            const filePath = `/data/french-bible/${fileName}`;
+            
+            try {
+                const response = await fetch(filePath);
+                
+                if (response.ok) {
+                    const text = await response.text();
+                    const parsedData = parseFrenchBibleText(text, malagasyBook, chapter);
+                    
+                    // Initialiser le livre s'il n'existe pas encore
+                    if (!bibleData.french[malagasyBook]) {
+                        bibleData.french[malagasyBook] = {};
+                    }
+                    
+                    // Ajouter le chapitre
+                    bibleData.french[malagasyBook][chapter] = parsedData;
+                    
+                    loadedCount++;
+                    if (loadedCount % 50 === 0) {
+                        console.log(`✓ ${loadedCount} fichiers français chargés...`);
+                    }
+                } else {
+                    console.warn(`✗ Fichier français non trouvé: ${fileName}`);
+                    errorCount++;
+                }
+            } catch (error) {
+                console.error(`✗ Erreur avec ${fileName}:`, error);
+                errorCount++;
+            }
+        }
+        
+        console.log(`Chargement de la Bible française terminé: ${loadedCount} succès, ${errorCount} erreurs`);
+        
+        // Compléter les chapitres manquants avec des données mock
+        completeMissingFrenchChapters();
+        
+    } catch (error) {
+        console.error('Erreur lors du chargement de la Bible française:', error);
+        // En cas d'erreur, charger la version mock
+        await loadFrenchBibleMock();
+    }
+}
+
+// Génère la liste complète des fichiers français basée sur le mapping
+function generateFrenchFileList() {
+    const filesToLoad = [];
+    
+    // Parcourir tous les mappings de fichiers
+    for (const [fileCode, malagasyBook] of Object.entries(frenchFileMapping)) {
+        const chapterCount = getRealisticChapterCounts(malagasyBook);
+        
+        for (let chapter = 1; chapter <= chapterCount; chapter++) {
+            // Format spécial pour les Psaumes (3 chiffres)
+            let chapterStr;
+            if (fileCode === "020_PSA") {
+                chapterStr = chapter.toString().padStart(3, '0');
+            } else {
+                chapterStr = chapter.toString().padStart(2, '0');
+            }
+            
+            const fileName = `frajnd_${fileCode}_${chapterStr}_read.txt`;
+            
+            filesToLoad.push({
+                fileName,
+                malagasyBook,
+                chapter
+            });
+        }
+    }
+    
+    return filesToLoad;
+}
+
+// Parser pour les fichiers français
+function parseFrenchBibleText(text, bookName, chapter) {
+    const verses = {};
+    const lines = text.split('\n');
+    
+    console.log(`Analyse du fichier français ${bookName} chapitre ${chapter}, ${lines.length} lignes`);
+
+    lines.forEach((line, index) => {
+        line = line.trim();
+        if (!line) return;
+
+        // Format français typique: « Texte » (Référence)
+        const verseMatch = line.match(/«\s*(.*?)\s*»\s*\(([^)]+)\)/);
+        if (verseMatch) {
+            const verseText = verseMatch[1].trim();
+            const reference = verseMatch[2];
+            
+            // Extraire le numéro de verset de la référence
+            const verseNumMatch = reference.match(/:(\d+)/);
+            if (verseNumMatch) {
+                const verse = parseInt(verseNumMatch[1]);
+                verses[verse] = verseText;
+                
+                if (index < 2 && chapter === 1) { // Log les 2 premiers versets du premier chapitre pour debug
+                    console.log(`  ${bookName} ${chapter}:${verse} -> "${verseText.substring(0, 50)}..."`);
+                }
+            }
+        } else {
+            // Si le format standard ne marche pas, essayer d'autres patterns
+            const alternativeMatch = line.match(/(\d+)\s+(.*)/);
+            if (alternativeMatch) {
+                const verse = parseInt(alternativeMatch[1]);
+                const verseText = alternativeMatch[2].trim();
+                verses[verse] = verseText;
+            } else if (line.includes('«') && line.includes('»')) {
+                // Format alternatif avec guillemets mais sans parenthèses
+                const textMatch = line.match(/«(.*?)»/);
+                if (textMatch) {
+                    const verseText = textMatch[1].trim();
+                    // Essayer d'extraire le numéro du verset du début de la ligne
+                    const verseNumMatch = line.match(/^(\d+)/);
+                    const verse = verseNumMatch ? parseInt(verseNumMatch[1]) : index + 1;
+                    verses[verse] = verseText;
+                }
+            }
+        }
+    });
+
+    // Si aucun verset n'a été trouvé, essayer une méthode de secours
+    if (Object.keys(verses).length === 0) {
+        return parseFrenchBibleTextFallback(text, bookName, chapter);
+    }
+
+    return verses;
+}
+
+// Méthode de secours pour le parsing français
+function parseFrenchBibleTextFallback(text, bookName, chapter) {
+    const verses = {};
+    const lines = text.split('\n').filter(line => line.trim());
+    
+    console.log(`Parsing de secours pour ${bookName} chapitre ${chapter}`);
+
+    lines.forEach((line, index) => {
+        // Essayer différents patterns
+        const patterns = [
+            /(\d+)[\s\.]+(.*)/, // "1. Texte" ou "1 Texte"
+            /^(\d+)\s*[-:]\s*(.*)/, // "1: Texte" ou "1 - Texte"
+            /«(.*?)»/, // Juste le texte entre guillemets
+        ];
+        
+        for (const pattern of patterns) {
+            const match = line.match(pattern);
+            if (match) {
+                let verse, verseText;
+                
+                if (pattern === /«(.*?)»/) {
+                    verse = index + 1;
+                    verseText = match[1].trim();
+                } else {
+                    verse = parseInt(match[1]);
+                    verseText = match[2].trim();
+                }
+                
+                if (verse && verseText) {
+                    verses[verse] = verseText;
+                    break;
+                }
+            }
+        }
+        
+        // Si aucun pattern ne correspond, utiliser le numéro de ligne
+        if (!verses[index + 1] && line.trim()) {
+            verses[index + 1] = line.trim();
+        }
+    });
+
+    return verses;
+}
+
+// Complète les chapitres manquants en français
+function completeMissingFrenchChapters() {
+    books.forEach(book => {
+        if (!bibleData.french[book]) {
+            bibleData.french[book] = {};
+        }
+        
+        const chapterCount = getRealisticChapterCounts(book);
+        for (let chapter = 1; chapter <= chapterCount; chapter++) {
+            if (!bibleData.french[book][chapter]) {
+                bibleData.french[book][chapter] = generateMockFrenchChapter(book, chapter);
+                console.log(`Chapitre mock généré: ${book} ${chapter}`);
+            }
+        }
+    });
+}
+
 function parseBibleText(text, bookName) {
     const chapters = {};
     const lines = text.split('\n');
@@ -125,7 +403,7 @@ function parseBibleText(text, bookName) {
         // Format: « Texte » (Livre chapitre:verset)
         const verseMatch = line.match(/«\s*(.*?)\s*»\s*\(([^)]+)\)/);
         if (verseMatch) {
-            const verseText = verseMatch[1].trim(); // CORRECTION ICI
+            const verseText = verseMatch[1].trim();
             const reference = verseMatch[2];
             
             const refMatch = reference.match(/(\d+):(\d+)/);
@@ -139,9 +417,6 @@ function parseBibleText(text, bookName) {
                 
                 if (verseText) {
                     chapters[chapter][verse] = verseText;
-                    if (index < 3) { // Log les 3 premiers versets pour debug
-                        console.log(`  ${bookName} ${chapter}:${verse} -> "${verseText.substring(0, 50)}..."`);
-                    }
                 }
             }
         }
@@ -179,7 +454,7 @@ function parseProblematicBooks(text, bookName) {
     return chapters;
 }
 
-// Version française mock
+// Version française mock (fallback)
 async function loadFrenchBibleMock() {
     console.log('Chargement de la Bible française mock...');
     books.forEach(book => {
@@ -217,6 +492,17 @@ function generateMockFrenchChapters(book) {
     return chapters;
 }
 
+function generateMockFrenchChapter(book, chapter) {
+    const verses = {};
+    const frenchBookName = bookNames.french[book];
+    const verseCount = getRealisticVerseCount(book, chapter);
+    
+    for (let j = 1; j <= verseCount; j++) {
+        verses[j] = `[Version française en attente] ${frenchBookName} ${chapter}:${j}`;
+    }
+    return verses;
+}
+
 function getRealisticChapterCounts(book) {
     const counts = {
         // Ancien Testament
@@ -242,9 +528,11 @@ function getRealisticChapterCounts(book) {
 }
 
 function getRealisticVerseCount(book, chapter) {
+    // Retourne un nombre réaliste de versets par défaut
     return 30;
 }
 
+// Les fonctions suivantes restent identiques à ta version originale...
 export function populateBookSelect() {
     const bookSelect = document.getElementById('book-select');
     if (!bookSelect) {
