@@ -4,44 +4,44 @@ export const bibleData = {
     french: {}
 };
 
-// Liste complète des livres de la Bible en malgache
+// Liste complète des livres de la Bible en malgache - CORRIGÉE
 export const books = [
     // Ancien Testament
-    "Genesisy", "Eksodosy", "Levitikosy", "Nomery", "Deuteronomy", "Josoa", "Mpitsara", "Rota",
-    "1 Samoela", "2 Samoela", "1 Mpanjaka", "2 Mpanjaka", "1 Tantara", "2 Tantara", "Esdrasa", "Nehemia",
-    "Estera", "Joba", "Salamo", "Ohabolana", "Mpitoriteny", "Tononkira i Salomona", "Isaia", "Jeremia",
-    "Fitoriana", "Ezekiela", "Daniela", "Hosea", "Joela", "Amosa", "Obadia", "Jona", "Mika", "Nahoma",
+    "Genesisy", "Eksodosy", "Levitikosy", "Nomery", "Deotoronomia", "Josoa", "Mpitsara", "Rota",
+    "I Samoela", "II Samoela", "I Mpanjaka", "II Mpanjaka", "I Tantara", "II Tantara", "Ezra", "Nehemia",
+    "Estera", "Joba", "Salamo", "Ohabolana", "Mpitoriteny", "Tonon-kiran'i Solomona", "Isaia", "Jeremia",
+    "Fitomaniana", "Ezekiela", "Daniela", "Hosea", "Joela", "Amosa", "Obadia", "Jona", "Mika", "Nahoma",
     "Habakoka", "Zefania", "Hagay", "Zakaria", "Malakia",
     
     // Nouveau Testament
-    "Matio", "Marka", "Lioka", "Jaona", "Asan'ny Apostoly", "Romana", "1 Korintiana", "2 Korintiana",
-    "Galatiana", "Efesiana", "Filipiana", "Kolosiana", "1 Tesaloniana", "2 Tesaloniana", "1 Timoty",
-    "2 Timoty", "Titosy", "Filemona", "Hebreo", "Jakoba", "1 Petera", "2 Petera", "1 Jaona", "2 Jaona",
-    "3 Jaona", "Joda", "Apokalypsy"
+    "Matio", "Marka", "Lioka", "Jaona", "Asan'ny Apostoly", "Romana", "I Korintiana", "II Korintiana",
+    "Galatiana", "Efesiana", "Filipiana", "Kolosiana", "I Tesaloniana", "II Tesaloniana", "I Timoty",
+    "II Timoty", "Titosy", "Filemona", "Hebreo", "Jakoba", "I Petera", "II Petera", "I Jaona", "II Jaona",
+    "III Jaona", "Joda", "Apokalipsy"
 ];
 
-// Mapping des livres malgaches vers français
+// Mapping des livres - CORRIGÉ
 export const bookNames = {
     malagasy: {},
     french: {
         // Ancien Testament
         "Genesisy": "Genèse", "Eksodosy": "Exode", "Levitikosy": "Lévitique", "Nomery": "Nombres",
-        "Deuteronomy": "Deutéronome", "Josoa": "Josué", "Mpitsara": "Juges", "Rota": "Ruth",
-        "1 Samoela": "1 Samuel", "2 Samoela": "2 Samuel", "1 Mpanjaka": "1 Rois", "2 Mpanjaka": "2 Rois",
-        "1 Tantara": "1 Chroniques", "2 Tantara": "2 Chroniques", "Esdrasa": "Esdras", "Nehemia": "Néhémie",
+        "Deotoronomia": "Deutéronome", "Josoa": "Josué", "Mpitsara": "Juges", "Rota": "Ruth",
+        "I Samoela": "1 Samuel", "II Samoela": "2 Samuel", "I Mpanjaka": "1 Rois", "II Mpanjaka": "2 Rois",
+        "I Tantara": "1 Chroniques", "II Tantara": "2 Chroniques", "Ezra": "Esdras", "Nehemia": "Néhémie",
         "Estera": "Esther", "Joba": "Job", "Salamo": "Psaumes", "Ohabolana": "Proverbes", "Mpitoriteny": "Ecclésiaste",
-        "Tononkira i Salomona": "Cantique des Cantiques", "Isaia": "Ésaïe", "Jeremia": "Jérémie", "Fitoriana": "Lamentations",
+        "Tonon-kiran'i Solomona": "Cantique des Cantiques", "Isaia": "Ésaïe", "Jeremia": "Jérémie", "Fitomaniana": "Lamentations",
         "Ezekiela": "Ézéchiel", "Daniela": "Daniel", "Hosea": "Osée", "Joela": "Joël", "Amosa": "Amos",
         "Obadia": "Abdias", "Jona": "Jonas", "Mika": "Michée", "Nahoma": "Nahum", "Habakoka": "Habacuc",
         "Zefania": "Sophonie", "Hagay": "Aggée", "Zakaria": "Zacharie", "Malakia": "Malachie",
         
         // Nouveau Testament
         "Matio": "Matthieu", "Marka": "Marc", "Lioka": "Luc", "Jaona": "Jean", "Asan'ny Apostoly": "Actes",
-        "Romana": "Romains", "1 Korintiana": "1 Corinthiens", "2 Korintiana": "2 Corinthiens", "Galatiana": "Galates",
-        "Efesiana": "Éphésiens", "Filipiana": "Philippiens", "Kolosiana": "Colossiens", "1 Tesaloniana": "1 Thessaloniciens",
-        "2 Tesaloniana": "2 Thessaloniciens", "1 Timoty": "1 Timothée", "2 Timoty": "2 Timothée", "Titosy": "Tite",
-        "Filemona": "Philémon", "Hebreo": "Hébreux", "Jakoba": "Jacques", "1 Petera": "1 Pierre", "2 Petera": "2 Pierre",
-        "1 Jaona": "1 Jean", "2 Jaona": "2 Jean", "3 Jaona": "3 Jean", "Joda": "Jude", "Apokalypsy": "Apocalypse"
+        "Romana": "Romains", "I Korintiana": "1 Corinthiens", "II Korintiana": "2 Corinthiens", "Galatiana": "Galates",
+        "Efesiana": "Éphésiens", "Filipiana": "Philippiens", "Kolosiana": "Colossiens", "I Tesaloniana": "1 Thessaloniciens",
+        "II Tesaloniana": "2 Thessaloniciens", "I Timoty": "1 Timothée", "II Timoty": "2 Timothée", "Titosy": "Tite",
+        "Filemona": "Philémon", "Hebreo": "Hébreux", "Jakoba": "Jacques", "I Petera": "1 Pierre", "II Petera": "2 Pierre",
+        "I Jaona": "1 Jean", "II Jaona": "2 Jean", "III Jaona": "3 Jean", "Joda": "Jude", "Apokalipsy": "Apocalypse"
     }
 };
 
@@ -51,6 +51,7 @@ books.forEach(book => {
 });
 
 export async function initializeApp() {
+    console.log('Initialisation de l application...');
     await loadMalagasyBible();
     await loadFrenchBibleMock();
     populateBookSelect();
@@ -59,32 +60,44 @@ export async function initializeApp() {
 
 async function loadMalagasyBible() {
     try {
-        console.log('Chargement de la Bible malgache...');
+        console.log('Début du chargement de la Bible malgache...');
         
         for (const book of books) {
             const fileName = `${book}.txt`;
+            const filePath = `/data/malagasy-bible/${fileName}`;
+            
+            console.log(`Tentative de chargement: ${filePath}`);
+            
             try {
-                const response = await fetch(`/data/malagasy-bible/${fileName}`);
+                const response = await fetch(filePath);
+                console.log(`Réponse pour ${fileName}: ${response.status}`);
+                
                 if (response.ok) {
                     const text = await response.text();
+                    console.log(`Fichier ${fileName} chargé, longueur: ${text.length} caractères`);
+                    
                     const parsedData = parseBibleText(text, book);
                     bibleData.malagasy[book] = parsedData;
-                    console.log(`✓ ${book} chargé: ${Object.keys(parsedData).length} chapitres`);
                     
-                    // Afficher un exemple pour vérifier
-                    if (book === 'Matio' && parsedData[1]) {
-                        console.log('Exemple Matio 1:1:', parsedData[1][1]);
+                    console.log(`✓ ${book} analysé: ${Object.keys(parsedData).length} chapitres`);
+                    
+                    // Afficher un exemple du premier verset pour vérifier
+                    if (parsedData[1] && parsedData[1][1]) {
+                        console.log(`Exemple ${book} 1:1:`, parsedData[1][1].substring(0, 100));
                     }
                 } else {
-                    console.warn(`✗ Fichier non trouvé: ${fileName}`);
+                    console.warn(`✗ Fichier non trouvé (${response.status}): ${fileName}`);
                     bibleData.malagasy[book] = generateMockChapters(book);
                 }
             } catch (error) {
-                console.warn(`✗ Erreur avec ${fileName}:`, error.message);
+                console.error(`✗ Erreur avec ${fileName}:`, error);
                 bibleData.malagasy[book] = generateMockChapters(book);
             }
         }
-        console.log('Bible malgache complètement chargée', bibleData.malagasy);
+        
+        console.log('Chargement de la Bible malgache terminé');
+        console.log('Livres chargés:', Object.keys(bibleData.malagasy));
+        
     } catch (error) {
         console.error('Erreur lors du chargement de la Bible malgache:', error);
     }
@@ -94,19 +107,18 @@ function parseBibleText(text, bookName) {
     const chapters = {};
     const lines = text.split('\n');
     
-    console.log(`Parsing ${bookName}, ${lines.length} lignes`);
+    console.log(`Analyse de ${bookName}, ${lines.length} lignes`);
 
-    lines.forEach((line, lineIndex) => {
+    lines.forEach((line, index) => {
         line = line.trim();
         if (!line) return;
 
-        // Format: « Texte du verset » (Livre chapitre:verset)
-        const verseMatch = line.match(/«\s*(.*?)\s*»\s*\(([^)]+)\)/);
+        // Format: « Texte » (Livre chapitre:verset)
+        const verseMatch = line.match(/«\s*(.*?)\s*»\s*\(([^)]+\s+\d+:\d+)\)/);
         if (verseMatch) {
             const verseText = verseMatch[1].trim();
             const reference = verseMatch[2];
             
-            // Extraire chapitre et verset de la référence
             const refMatch = reference.match(/(\d+):(\d+)/);
             if (refMatch) {
                 const chapter = parseInt(refMatch[1]);
@@ -116,38 +128,8 @@ function parseBibleText(text, bookName) {
                     chapters[chapter] = {};
                 }
                 
-                // Nettoyer le texte des notes entre crochets
-                let cleanText = verseText;
-                
-                // Gérer les notes comme [*Gr. Arama] - les garder pour l'instant
-                // cleanText = cleanText.replace(/\[\*[^\]]*\]/g, '');
-                
-                if (cleanText) {
-                    chapters[chapter][verse] = cleanText;
-                    if (lineIndex < 5) { // Log les 5 premiers versets pour debug
-                        console.log(`  ${bookName} ${chapter}:${verse} -> "${cleanText.substring(0, 30)}..."`);
-                    }
-                }
-            }
-        } else {
-            // Essayer un format alternatif sans guillemets
-            const altMatch = line.match(/(.*?)\s*\(([^)]+)\)/);
-            if (altMatch) {
-                const verseText = altMatch[1].trim();
-                const reference = altMatch[2];
-                
-                const refMatch = reference.match(/(\d+):(\d+)/);
-                if (refMatch) {
-                    const chapter = parseInt(refMatch[1]);
-                    const verse = parseInt(refMatch[2]);
-                    
-                    if (!chapters[chapter]) {
-                        chapters[chapter] = {};
-                    }
-                    
-                    if (verseText) {
-                        chapters[chapter][verse] = verseText;
-                    }
+                if (verseText) {
+                    chapters[chapter][verse] = verseText;
                 }
             }
         }
@@ -188,7 +170,7 @@ function generateMockFrenchChapters(book) {
         chapters[i] = {};
         const verseCount = getRealisticVerseCount(book, i);
         for (let j = 1; j <= verseCount; j++) {
-            chapters[i][j] = `[Version française en attente] ${frenchBookName} ${i}:${j} - Le texte français de la Bible Louis Segond sera chargé ici prochainement.`;
+            chapters[i][j] = `[Version française en attente] ${frenchBookName} ${i}:${j}`;
         }
     }
     return chapters;
@@ -197,22 +179,22 @@ function generateMockFrenchChapters(book) {
 function getRealisticChapterCounts(book) {
     const counts = {
         // Ancien Testament
-        "Genesisy": 50, "Eksodosy": 40, "Levitikosy": 27, "Nomery": 36, "Deuteronomy": 34,
-        "Josoa": 24, "Mpitsara": 21, "Rota": 4, "1 Samoela": 31, "2 Samoela": 24,
-        "1 Mpanjaka": 22, "2 Mpanjaka": 25, "1 Tantara": 29, "2 Tantara": 36, "Esdrasa": 10,
+        "Genesisy": 50, "Eksodosy": 40, "Levitikosy": 27, "Nomery": 36, "Deotoronomia": 34,
+        "Josoa": 24, "Mpitsara": 21, "Rota": 4, "I Samoela": 31, "II Samoela": 24,
+        "I Mpanjaka": 22, "II Mpanjaka": 25, "I Tantara": 29, "II Tantara": 36, "Ezra": 10,
         "Nehemia": 13, "Estera": 10, "Joba": 42, "Salamo": 150, "Ohabolana": 31,
-        "Mpitoriteny": 12, "Tononkira i Salomona": 8, "Isaia": 66, "Jeremia": 52,
-        "Fitoriana": 5, "Ezekiela": 48, "Daniela": 12, "Hosea": 14, "Joela": 3,
+        "Mpitoriteny": 12, "Tonon-kiran'i Solomona": 8, "Isaia": 66, "Jeremia": 52,
+        "Fitomaniana": 5, "Ezekiela": 48, "Daniela": 12, "Hosea": 14, "Joela": 3,
         "Amosa": 9, "Obadia": 1, "Jona": 4, "Mika": 7, "Nahoma": 3, "Habakoka": 3,
         "Zefania": 3, "Hagay": 2, "Zakaria": 14, "Malakia": 4,
         
         // Nouveau Testament
         "Matio": 28, "Marka": 16, "Lioka": 24, "Jaona": 21, "Asan'ny Apostoly": 28,
-        "Romana": 16, "1 Korintiana": 16, "2 Korintiana": 13, "Galatiana": 6,
-        "Efesiana": 6, "Filipiana": 4, "Kolosiana": 4, "1 Tesaloniana": 5,
-        "2 Tesaloniana": 3, "1 Timoty": 6, "2 Timoty": 4, "Titosy": 3,
-        "Filemona": 1, "Hebreo": 13, "Jakoba": 5, "1 Petera": 5, "2 Petera": 3,
-        "1 Jaona": 5, "2 Jaona": 1, "3 Jaona": 1, "Joda": 1, "Apokalypsy": 22
+        "Romana": 16, "I Korintiana": 16, "II Korintiana": 13, "Galatiana": 6,
+        "Efesiana": 6, "Filipiana": 4, "Kolosiana": 4, "I Tesaloniana": 5,
+        "II Tesaloniana": 3, "I Timoty": 6, "II Timoty": 4, "Titosy": 3,
+        "Filemona": 1, "Hebreo": 13, "Jakoba": 5, "I Petera": 5, "II Petera": 3,
+        "I Jaona": 5, "II Jaona": 1, "III Jaona": 1, "Joda": 1, "Apokalipsy": 22
     };
     
     return counts[book] || 10;
@@ -224,6 +206,11 @@ function getRealisticVerseCount(book, chapter) {
 
 function populateBookSelect() {
     const bookSelect = document.getElementById('book-select');
+    if (!bookSelect) {
+        console.error('Element book-select non trouvé');
+        return;
+    }
+    
     bookSelect.innerHTML = '<option value="">Choisir un livre</option>';
     
     const oldTestament = books.slice(0, 39);
@@ -263,6 +250,11 @@ function populateBookSelect() {
 
 export function populateChapterSelect(book, version = 'malagasy') {
     const chapterSelect = document.getElementById('chapter-select');
+    if (!chapterSelect) {
+        console.error('Element chapter-select non trouvé');
+        return;
+    }
+    
     chapterSelect.innerHTML = '<option value="">Chapitre</option>';
     
     const chapters = getChapters(book, version);
@@ -306,20 +298,26 @@ export function getVerses(book, chapter, version = 'malagasy') {
 export async function loadVerses(book, chapter) {
     if (!book || !chapter) return;
 
+    console.log(`Chargement des versets: ${book} chapitre ${chapter}`);
+
     const malagasyVerses = getVerses(book, chapter, 'malagasy');
     const frenchVerses = getVerses(book, chapter, 'french');
+
+    console.log(`Versets malgaches: ${Object.keys(malagasyVerses).length}`);
+    console.log(`Versets français: ${Object.keys(frenchVerses).length}`);
 
     displayVerses('malagasy', malagasyVerses, book, chapter);
     displayVerses('french', frenchVerses, book, chapter);
     
-    // Forcer le re-rendu si nécessaire
     setTimeout(syncScroll, 100);
 }
 
 function displayVerses(version, verses, book, chapter) {
-    const container = document.getElementById(`${version}-verses`);
+    const containerId = `${version}-verses`;
+    const container = document.getElementById(containerId);
+    
     if (!container) {
-        console.error(`Container non trouvé: ${version}-verses`);
+        console.error(`Container non trouvé: ${containerId}`);
         return;
     }
 
@@ -327,7 +325,6 @@ function displayVerses(version, verses, book, chapter) {
 
     if (!verses || Object.keys(verses).length === 0) {
         container.innerHTML = `<p class="no-verses">Aucun verset trouvé pour ${bookNames[version][book]} ${chapter}</p>`;
-        console.warn(`Aucun verset pour ${book} ${chapter} (${version})`);
         return;
     }
 
@@ -338,7 +335,6 @@ function displayVerses(version, verses, book, chapter) {
     titleElement.textContent = `${bookName} - Chapitre ${chapter}`;
     container.appendChild(titleElement);
 
-    // Trier les versets par numéro
     const verseNumbers = Object.keys(verses).map(Number).sort((a, b) => a - b);
     
     verseNumbers.forEach(verseNumber => {
@@ -364,7 +360,6 @@ function syncScroll() {
     const frenchContainer = document.getElementById('french-verses');
 
     if (!malagasyContainer || !frenchContainer) {
-        console.warn('Containers de défilement non trouvés');
         return;
     }
 
@@ -386,8 +381,8 @@ function syncScroll() {
     frenchContainer.addEventListener('scroll', () => handleScroll(frenchContainer, malagasyContainer));
 }
 
-// Debug: Vérifier que l'app s'initialise
+// Initialisation
 document.addEventListener('DOMContentLoaded', () => {
-    console.log('DOM chargé, initialisation de l app...');
+    console.log('DOM chargé - initialisation de l application');
     initializeApp();
 });
