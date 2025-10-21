@@ -4,6 +4,9 @@ export const bibleData = {
     french: {}
 };
 
+// Cache pour les chapitres français déjà chargés
+const frenchChapterCache = {};
+
 // Liste complète des livres de la Bible en malgache
 export const books = [
     // Ancien Testament
@@ -123,11 +126,12 @@ books.forEach(book => {
     bookNames.malagasy[book] = book;
 });
 
-// Fonction principale d'initialisation
+// Fonction principale d'initialisation - CHARGEMENT RAPIDE
 export async function initializeApp() {
     console.log('Initialisation de l application...');
     await loadMalagasyBible();
-    await loadFrenchBible();
+    // Initialiser bibleData.french comme objet vide - chargement à la demande
+    bibleData.french = {};
     populateBookSelect();
     populateChapterSelect('Matio');
 }
@@ -163,10 +167,6 @@ async function loadMalagasyBible() {
                     
                     console.log(`✓ ${book} analysé: ${Object.keys(parsedData).length} chapitres`);
                     
-                    // Afficher un exemple du premier verset pour vérifier
-                    if (parsedData[1] && parsedData[1][1]) {
-                        console.log(`Exemple ${book} 1:1:`, parsedData[1][1].substring(0, 100));
-                    }
                 } else {
                     console.warn(`✗ Fichier non trouvé (${response.status}): ${fileName}`);
                     bibleData.malagasy[book] = generateMockChapters(book);
@@ -185,106 +185,88 @@ async function loadMalagasyBible() {
     }
 }
 
-// Nouvelle fonction pour charger la Bible française
-async function loadFrenchBible() {
+// CHARGEMENT À LA DEMANDE DES CHAPITRES FRANÇAIS
+async function loadFrenchChapterOnDemand(malagasyBook, chapter) {
+    const cacheKey = `${malagasyBook}-${chapter}`;
+    
+    // Vérifier le cache d'abord
+    if (frenchChapterCache[cacheKey]) {
+        console.log(`Chapitre ${cacheKey} trouvé dans le cache`);
+        return frenchChapterCache[cacheKey];
+    }
+    
+    const fileCode = Object.keys(frenchFileMapping).find(
+        code => frenchFileMapping[code] === malagasyBook
+    );
+    
+    if (!fileCode) {
+        console.warn(`Aucun code trouvé pour ${malagasyBook}`);
+        const mockVerses = generateMockFrenchChapter(malagasyBook, chapter);
+        frenchChapterCache[cacheKey] = mockVerses;
+        return mockVerses;
+    }
+    
+    let chapterStr;
+    if (fileCode === "020_PSA") {
+        chapterStr = chapter.toString().padStart(3, '0');
+    } else {
+        chapterStr = chapter.toString().padStart(2, '0');
+    }
+    
+    const fileName = `frajnd_${fileCode}_${chapterStr}_read.txt`;
+    const filePath = `/data/french-bible/${fileName}`;
+    
     try {
-        console.log('Début du chargement de la Bible française...');
-        
-        // Créer une liste de tous les fichiers français à charger
-        const frenchFilesToLoad = generateFrenchFileList();
-        
-        console.log(`Nombre de fichiers français à charger: ${frenchFilesToLoad.length}`);
-        
-        let loadedCount = 0;
-        let errorCount = 0;
-        
-        for (const fileInfo of frenchFilesToLoad) {
-            const { fileName, malagasyBook, chapter } = fileInfo;
-            const filePath = `/data/french-bible/${fileName}`;
+        const response = await fetch(filePath);
+        if (response.ok) {
+            const text = await response.text();
+            const parsedVerses = parseFrenchBibleText(text, malagasyBook, chapter);
             
-            try {
-                const response = await fetch(filePath);
-                
-                if (response.ok) {
-                    const text = await response.text();
-                    const parsedData = parseFrenchBibleText(text, malagasyBook, chapter);
-                    
-                    // Initialiser le livre s'il n'existe pas encore
-                    if (!bibleData.french[malagasyBook]) {
-                        bibleData.french[malagasyBook] = {};
-                    }
-                    
-                    // Ajouter le chapitre
-                    bibleData.french[malagasyBook][chapter] = parsedData;
-                    
-                    loadedCount++;
-                    if (loadedCount % 50 === 0) {
-                        console.log(`✓ ${loadedCount} fichiers français chargés...`);
-                    }
-                } else {
-                    console.warn(`✗ Fichier français non trouvé: ${fileName}`);
-                    errorCount++;
-                }
-            } catch (error) {
-                console.error(`✗ Erreur avec ${fileName}:`, error);
-                errorCount++;
-            }
+            // Mettre en cache
+            frenchChapterCache[cacheKey] = parsedVerses;
+            
+            console.log(`✓ ${fileName} chargé et parsé: ${Object.keys(parsedVerses).length} versets`);
+            return parsedVerses;
+        } else {
+            console.warn(`✗ Fichier non trouvé: ${fileName}`);
         }
-        
-        console.log(`Chargement de la Bible française terminé: ${loadedCount} succès, ${errorCount} erreurs`);
-        
-        // Compléter les chapitres manquants avec des données mock
-        completeMissingFrenchChapters();
-        
     } catch (error) {
-        console.error('Erreur lors du chargement de la Bible française:', error);
-        // En cas d'erreur, charger la version mock
-        await loadFrenchBibleMock();
-    }
-}
-
-// Génère la liste complète des fichiers français basée sur le mapping
-function generateFrenchFileList() {
-    const filesToLoad = [];
-    
-    // Parcourir tous les mappings de fichiers
-    for (const [fileCode, malagasyBook] of Object.entries(frenchFileMapping)) {
-        const chapterCount = getRealisticChapterCounts(malagasyBook);
-        
-        for (let chapter = 1; chapter <= chapterCount; chapter++) {
-            // Format spécial pour les Psaumes (3 chiffres)
-            let chapterStr;
-            if (fileCode === "020_PSA") {
-                chapterStr = chapter.toString().padStart(3, '0');
-            } else {
-                chapterStr = chapter.toString().padStart(2, '0');
-            }
-            
-            const fileName = `frajnd_${fileCode}_${chapterStr}_read.txt`;
-            
-            filesToLoad.push({
-                fileName,
-                malagasyBook,
-                chapter
-            });
-        }
+        console.warn(`✗ Erreur de chargement pour ${fileName}:`, error);
     }
     
-    return filesToLoad;
+    const mockVerses = generateMockFrenchChapter(malagasyBook, chapter);
+    frenchChapterCache[cacheKey] = mockVerses;
+    return mockVerses;
 }
 
-// Parser pour les fichiers français
+// PARSING AMÉLIORÉ POUR LES FICHIERS FRANÇAIS
 function parseFrenchBibleText(text, bookName, chapter) {
+    // Détecter le type de format
+    const hasGuillemets = text.includes('«') && text.includes('»');
+    const hasNumberedVerses = /\d+[\.\s]/.test(text);
+    
+    if (hasGuillemets) {
+        console.log(`Format avec guillemets détecté pour ${bookName} ${chapter}`);
+        return parseFrenchBibleTextWithGuillemets(text, bookName, chapter);
+    } else if (hasNumberedVerses) {
+        console.log(`Format avec numéros détecté pour ${bookName} ${chapter}`);
+        return parseFrenchBibleTextWithNumberedVerses(text, bookName, chapter);
+    } else {
+        console.log(`Format libre détecté pour ${bookName} ${chapter}`);
+        return parseFrenchBibleTextFreeFormat(text, bookName, chapter);
+    }
+}
+
+// Parser pour les formats avec guillemets (comme Proverbes)
+function parseFrenchBibleTextWithGuillemets(text, bookName, chapter) {
     const verses = {};
     const lines = text.split('\n');
     
-    console.log(`Analyse du fichier français ${bookName} chapitre ${chapter}, ${lines.length} lignes`);
-
     lines.forEach((line, index) => {
         line = line.trim();
         if (!line) return;
 
-        // Format français typique: « Texte » (Référence)
+        // Format avec guillemets français : « Texte » (Référence)
         const verseMatch = line.match(/«\s*(.*?)\s*»\s*\(([^)]+)\)/);
         if (verseMatch) {
             const verseText = verseMatch[1].trim();
@@ -295,107 +277,125 @@ function parseFrenchBibleText(text, bookName, chapter) {
             if (verseNumMatch) {
                 const verse = parseInt(verseNumMatch[1]);
                 verses[verse] = verseText;
-                
-                if (index < 2 && chapter === 1) { // Log les 2 premiers versets du premier chapitre pour debug
-                    console.log(`  ${bookName} ${chapter}:${verse} -> "${verseText.substring(0, 50)}..."`);
-                }
             }
         } else {
-            // Si le format standard ne marche pas, essayer d'autres patterns
-            const alternativeMatch = line.match(/(\d+)\s+(.*)/);
+            // Essayer d'autres patterns pour les fichiers avec guillemets mais format différent
+            const alternativeMatch = line.match(/(\d+)\s*«(.*?)»/);
             if (alternativeMatch) {
                 const verse = parseInt(alternativeMatch[1]);
                 const verseText = alternativeMatch[2].trim();
                 verses[verse] = verseText;
-            } else if (line.includes('«') && line.includes('»')) {
-                // Format alternatif avec guillemets mais sans parenthèses
-                const textMatch = line.match(/«(.*?)»/);
-                if (textMatch) {
-                    const verseText = textMatch[1].trim();
-                    // Essayer d'extraire le numéro du verset du début de la ligne
-                    const verseNumMatch = line.match(/^(\d+)/);
-                    const verse = verseNumMatch ? parseInt(verseNumMatch[1]) : index + 1;
-                    verses[verse] = verseText;
-                }
             }
         }
     });
 
-    // Si aucun verset n'a été trouvé, essayer une méthode de secours
-    if (Object.keys(verses).length === 0) {
-        return parseFrenchBibleTextFallback(text, bookName, chapter);
+    return verses;
+}
+
+// Parser pour les formats avec numéros de versets explicites
+function parseFrenchBibleTextWithNumberedVerses(text, bookName, chapter) {
+    const verses = {};
+    const lines = text.split('\n').filter(line => line.trim());
+    
+    let currentVerse = 1;
+
+    lines.forEach((line, index) => {
+        line = line.trim();
+        
+        // Ignorer les lignes d'en-tête
+        if (isHeaderLine(line, bookName, chapter)) {
+            return;
+        }
+
+        // Chercher un numéro de verset au début de la ligne
+        const verseMatch = line.match(/^(\d+)[\.\s]+(.*)/);
+        if (verseMatch) {
+            currentVerse = parseInt(verseMatch[1]);
+            const verseText = verseMatch[2].trim();
+            
+            if (verseText) {
+                verses[currentVerse] = verseText;
+            }
+        } else if (line) {
+            // Si pas de numéro mais du texte, l'ajouter au verset en cours
+            if (verses[currentVerse]) {
+                verses[currentVerse] += ' ' + line;
+            } else {
+                verses[currentVerse] = line;
+            }
+        }
+    });
+
+    return verses;
+}
+
+// Parser pour les formats libres (comme Matthieu)
+function parseFrenchBibleTextFreeFormat(text, bookName, chapter) {
+    const verses = {};
+    const lines = text.split('\n').filter(line => line.trim());
+    
+    let verseNumber = 1;
+    let currentParagraph = '';
+
+    lines.forEach((line, index) => {
+        line = line.trim();
+        
+        // Ignorer les lignes d'en-tête
+        if (isHeaderLine(line, bookName, chapter)) {
+            return;
+        }
+
+        // Si la ligne commence par un chiffre, c'est probablement un nouveau verset
+        const startsWithNumber = /^\d+[\.\s]/.test(line);
+        
+        if (startsWithNumber && currentParagraph) {
+            // Sauvegarder le paragraphe précédent comme verset
+            verses[verseNumber] = currentParagraph.trim();
+            verseNumber++;
+            currentParagraph = line;
+        } else if (line) {
+            // Ajouter à la ligne en cours
+            if (currentParagraph) currentParagraph += ' ';
+            currentParagraph += line;
+        }
+    });
+
+    // Ne pas oublier le dernier paragraphe
+    if (currentParagraph) {
+        verses[verseNumber] = currentParagraph.trim();
     }
 
     return verses;
 }
 
-// Méthode de secours pour le parsing français
-function parseFrenchBibleTextFallback(text, bookName, chapter) {
-    const verses = {};
-    const lines = text.split('\n').filter(line => line.trim());
+// Fonction pour identifier les lignes d'en-tête
+function isHeaderLine(line, bookName, chapter) {
+    const frenchBookName = bookNames.french[bookName];
     
-    console.log(`Parsing de secours pour ${bookName} chapitre ${chapter}`);
-
-    lines.forEach((line, index) => {
-        // Essayer différents patterns
-        const patterns = [
-            /(\d+)[\s\.]+(.*)/, // "1. Texte" ou "1 Texte"
-            /^(\d+)\s*[-:]\s*(.*)/, // "1: Texte" ou "1 - Texte"
-            /«(.*?)»/, // Juste le texte entre guillemets
-        ];
-        
-        for (const pattern of patterns) {
-            const match = line.match(pattern);
-            if (match) {
-                let verse, verseText;
-                
-                if (pattern === /«(.*?)»/) {
-                    verse = index + 1;
-                    verseText = match[1].trim();
-                } else {
-                    verse = parseInt(match[1]);
-                    verseText = match[2].trim();
-                }
-                
-                if (verse && verseText) {
-                    verses[verse] = verseText;
-                    break;
-                }
-            }
-        }
-        
-        // Si aucun pattern ne correspond, utiliser le numéro de ligne
-        if (!verses[index + 1] && line.trim()) {
-            verses[index + 1] = line.trim();
-        }
-    });
-
-    return verses;
+    // Vérifier si c'est le nom du livre
+    if (line.toLowerCase().includes(frenchBookName.toLowerCase()) || 
+        line.toLowerCase().includes(bookName.toLowerCase())) {
+        return true;
+    }
+    
+    // Vérifier si c'est le numéro de chapitre seul
+    if (line === chapter.toString() || line === `${chapter}.`) {
+        return true;
+    }
+    
+    // Vérifier les lignes très courtes qui pourraient être des en-têtes
+    if (line.length < 5 && /^\d+\.?$/.test(line)) {
+        return true;
+    }
+    
+    return false;
 }
 
-// Complète les chapitres manquants en français
-function completeMissingFrenchChapters() {
-    books.forEach(book => {
-        if (!bibleData.french[book]) {
-            bibleData.french[book] = {};
-        }
-        
-        const chapterCount = getRealisticChapterCounts(book);
-        for (let chapter = 1; chapter <= chapterCount; chapter++) {
-            if (!bibleData.french[book][chapter]) {
-                bibleData.french[book][chapter] = generateMockFrenchChapter(book, chapter);
-                console.log(`Chapitre mock généré: ${book} ${chapter}`);
-            }
-        }
-    });
-}
-
+// FONCTIONS EXISTANTES POUR LE PARSING MALGACHE
 function parseBibleText(text, bookName) {
     const chapters = {};
     const lines = text.split('\n');
     
-    console.log(`Analyse de ${bookName}, ${lines.length} lignes`);
-
     lines.forEach((line, index) => {
         line = line.trim();
         if (!line) return;
@@ -429,8 +429,6 @@ function parseProblematicBooks(text, bookName) {
     const chapters = { 1: {} };
     const lines = text.split('\n').filter(line => line.trim());
     
-    console.log(`Parsing spécial pour ${bookName}, ${lines.length} lignes`);
-
     lines.forEach((line, index) => {
         // Extraire le texte entre guillemets
         const textMatch = line.match(/«(.*?)»/);
@@ -454,15 +452,7 @@ function parseProblematicBooks(text, bookName) {
     return chapters;
 }
 
-// Version française mock (fallback)
-async function loadFrenchBibleMock() {
-    console.log('Chargement de la Bible française mock...');
-    books.forEach(book => {
-        bibleData.french[book] = generateMockFrenchChapters(book);
-    });
-    console.log('Bible française mock chargée');
-}
-
+// FONCTIONS DE GÉNÉRATION DE DONNÉES MOCK
 function generateMockChapters(book) {
     const chapters = {};
     const chapterCount = getRealisticChapterCounts(book);
@@ -472,21 +462,6 @@ function generateMockChapters(book) {
         const verseCount = getRealisticVerseCount(book, i);
         for (let j = 1; j <= verseCount; j++) {
             chapters[i][j] = `Texte malgache de ${book} ${i}:${j}`;
-        }
-    }
-    return chapters;
-}
-
-function generateMockFrenchChapters(book) {
-    const chapters = {};
-    const frenchBookName = bookNames.french[book];
-    const chapterCount = getRealisticChapterCounts(book);
-    
-    for (let i = 1; i <= chapterCount; i++) {
-        chapters[i] = {};
-        const verseCount = getRealisticVerseCount(book, i);
-        for (let j = 1; j <= verseCount; j++) {
-            chapters[i][j] = `[Version française en attente] ${frenchBookName} ${i}:${j}`;
         }
     }
     return chapters;
@@ -503,6 +478,7 @@ function generateMockFrenchChapter(book, chapter) {
     return verses;
 }
 
+// FONCTIONS UTILITAIRES
 function getRealisticChapterCounts(book) {
     const counts = {
         // Ancien Testament
@@ -528,11 +504,10 @@ function getRealisticChapterCounts(book) {
 }
 
 function getRealisticVerseCount(book, chapter) {
-    // Retourne un nombre réaliste de versets par défaut
     return 30;
 }
 
-// Les fonctions suivantes restent identiques à ta version originale...
+// FONCTIONS D'AFFICHAGE AVEC ALIGNEMENT DES VERSETS
 export function populateBookSelect() {
     const bookSelect = document.getElementById('book-select');
     if (!bookSelect) {
@@ -624,24 +599,43 @@ export function getVerses(book, chapter, version = 'malagasy') {
     return {};
 }
 
+// FONCTION PRINCIPALE DE CHARGEMENT DES VERSETS
 export async function loadVerses(book, chapter) {
     if (!book || !chapter) return;
 
     console.log(`Chargement des versets: ${book} chapitre ${chapter}`);
 
+    // Charger les versets malgaches
     const malagasyVerses = getVerses(book, chapter, 'malagasy');
-    const frenchVerses = getVerses(book, chapter, 'french');
 
-    console.log(`Versets malgaches: ${Object.keys(malagasyVerses).length}`);
-    console.log(`Versets français: ${Object.keys(frenchVerses).length}`);
+    // Charger les versets français À LA DEMANDE
+    let frenchVerses = getVerses(book, chapter, 'french');
+    
+    if (!frenchVerses || Object.keys(frenchVerses).length === 0) {
+        console.log(`Chargement français à la demande: ${book} chapitre ${chapter}`);
+        frenchVerses = await loadFrenchChapterOnDemand(book, chapter);
+        
+        // Stocker les versets chargés
+        if (!bibleData.french[book]) {
+            bibleData.french[book] = {};
+        }
+        bibleData.french[book][chapter] = frenchVerses;
+    }
 
-    displayVerses('malagasy', malagasyVerses, book, chapter);
-    displayVerses('french', frenchVerses, book, chapter);
+    // Afficher les versets avec alignement
+    displayVersesWithAlignment('malagasy', malagasyVerses, 'french', frenchVerses, book, chapter);
     
     setTimeout(syncScroll, 100);
 }
 
-function displayVerses(version, verses, book, chapter) {
+// AFFICHAGE AVEC ALIGNEMENT DES VERSETS
+function displayVersesWithAlignment(malagasyVersion, malagasyVerses, frenchVersion, frenchVerses, book, chapter) {
+    // Afficher les deux versions
+    displayAlignedVerses(malagasyVersion, malagasyVerses, frenchVerses, book, chapter);
+    displayAlignedVerses(frenchVersion, frenchVerses, malagasyVerses, book, chapter);
+}
+
+function displayAlignedVerses(version, verses, otherVerses, book, chapter) {
     const containerId = `${version}-verses`;
     const container = document.getElementById(containerId);
     
@@ -652,11 +646,6 @@ function displayVerses(version, verses, book, chapter) {
 
     container.innerHTML = '';
 
-    if (!verses || Object.keys(verses).length === 0) {
-        container.innerHTML = `<p class="no-verses">Aucun verset trouvé pour ${bookNames[version][book]} ${chapter}</p>`;
-        return;
-    }
-
     const bookName = bookNames[version][book];
 
     const titleElement = document.createElement('h4');
@@ -664,26 +653,40 @@ function displayVerses(version, verses, book, chapter) {
     titleElement.textContent = `${bookName} - Chapitre ${chapter}`;
     container.appendChild(titleElement);
 
-    const verseNumbers = Object.keys(verses).map(Number).sort((a, b) => a - b);
+    // Obtenir tous les numéros de versets possibles pour un alignement correct
+    const allVerseNumbers = getAllPossibleVerseNumbers(verses, otherVerses);
     
-    verseNumbers.forEach(verseNumber => {
+    allVerseNumbers.forEach(verseNumber => {
         const verseElement = document.createElement('div');
         verseElement.className = 'verse';
         verseElement.dataset.verseId = `${book}-${chapter}-${verseNumber}`;
         verseElement.dataset.version = version;
 
+        const verseText = verses[verseNumber] || '[Verset non disponible]';
+        
         const verseContent = `
             <span class="verse-number">${verseNumber}</span>
-            <span class="verse-text">${verses[verseNumber]}</span>
+            <span class="verse-text">${verseText}</span>
         `;
 
         verseElement.innerHTML = verseContent;
         container.appendChild(verseElement);
     });
     
-    console.log(`Affiché ${verseNumbers.length} versets pour ${book} ${chapter} (${version})`);
+    console.log(`Affiché ${allVerseNumbers.length} versets pour ${book} ${chapter} (${version})`);
 }
 
+// Fonction pour obtenir tous les numéros de versets possibles pour l'alignement
+function getAllPossibleVerseNumbers(verses1, verses2) {
+    const verseNumbers1 = Object.keys(verses1).map(Number);
+    const verseNumbers2 = Object.keys(verses2).map(Number);
+    
+    // Prendre l'union de tous les numéros de versets des deux versions
+    const allVerseNumbers = [...new Set([...verseNumbers1, ...verseNumbers2])];
+    return allVerseNumbers.sort((a, b) => a - b);
+}
+
+// SYNCHRONISATION DU SCROLL
 function syncScroll() {
     const malagasyContainer = document.getElementById('malagasy-verses');
     const frenchContainer = document.getElementById('french-verses');
