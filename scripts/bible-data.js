@@ -50,7 +50,7 @@ books.forEach(book => {
     bookNames.malagasy[book] = book;
 });
 
-// Fonction principale d'initialisation - BIEN EXPORTÉE
+// Fonction principale d'initialisation
 export async function initializeApp() {
     console.log('Initialisation de l application...');
     await loadMalagasyBible();
@@ -125,7 +125,7 @@ function parseBibleText(text, bookName) {
         // Format: « Texte » (Livre chapitre:verset)
         const verseMatch = line.match(/«\s*(.*?)\s*»\s*\(([^)]+)\)/);
         if (verseMatch) {
-            const verseText = verseText[1].trim();
+            const verseText = verseMatch[1].trim(); // CORRECTION ICI
             const reference = verseMatch[2];
             
             const refMatch = reference.match(/(\d+):(\d+)/);
@@ -139,6 +139,9 @@ function parseBibleText(text, bookName) {
                 
                 if (verseText) {
                     chapters[chapter][verse] = verseText;
+                    if (index < 3) { // Log les 3 premiers versets pour debug
+                        console.log(`  ${bookName} ${chapter}:${verse} -> "${verseText.substring(0, 50)}..."`);
+                    }
                 }
             }
         }
