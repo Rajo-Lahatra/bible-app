@@ -187,3 +187,82 @@ select, button {
         border-bottom: 1px solid var(--border-color);
     }
 }
+/* Style pour les groupes d'options */
+optgroup {
+    font-weight: bold;
+}
+
+optgroup option {
+    font-weight: normal;
+    padding-left: 10px;
+}
+
+/* Amélioration de l'affichage des livres */
+.chapter-title {
+    text-align: center;
+    margin-bottom: 1.5rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid var(--secondary-color);
+    color: var(--secondary-color);
+    font-size: 1.1em;
+}
+
+.verse-text {
+    line-height: 1.6;
+    text-align: justify;
+}
+
+.no-verses {
+    text-align: center;
+    color: #666;
+    font-style: italic;
+    padding: 2rem;
+}
+
+/* Amélioration de l'affichage des versets */
+.verse {
+    margin-bottom: 1rem;
+    padding: 0.75rem;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+    line-height: 1.6;
+    border-left: 3px solid transparent;
+}
+
+.verse:hover {
+    background-color: color-mix(in srgb, var(--secondary-color) 8%, transparent);
+    border-left-color: var(--secondary-color);
+    transform: translateX(2px);
+}
+
+.verse-number {
+    font-size: 0.75em;
+    color: var(--secondary-color);
+    font-weight: bold;
+    margin-right: 0.5rem;
+    background-color: color-mix(in srgb, var(--secondary-color) 15%, transparent);
+    padding: 0.2rem 0.4rem;
+    border-radius: 3px;
+    min-width: 1.8em;
+    display: inline-block;
+    text-align: center;
+}
+
+/* Style pour les versions */
+.bible-column h3 {
+    color: var(--primary-color);
+    margin: 0;
+    font-size: 1.2em;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .chapter-title {
+        font-size: 1em;
+    }
+    
+    .verse {
+        padding: 0.5rem;
+        margin-bottom: 0.75rem;
+    }
+}
