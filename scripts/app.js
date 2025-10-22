@@ -103,12 +103,13 @@ class BibleApp {
             this.onChapterSelect(e.target.value);
         });
 
-        // Outils de crayon et commentaire - CORRECTION ICI
+        // Outils de crayon et commentaire
         document.querySelectorAll('.tool-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 // Utiliser currentTarget pour toujours cibler le bouton
                 const button = e.currentTarget;
                 const tool = button.dataset.tool;
+                console.log('Tool clicked:', tool); // Debug
                 this.setActiveTool(tool);
             });
         });
@@ -367,6 +368,8 @@ class BibleApp {
     }
 
     setActiveTool(tool) {
+        console.log('Setting active tool:', tool); // Debug
+        
         // Vérifier que tool est défini
         if (!tool) {
             console.error('Tool is undefined');
@@ -380,11 +383,13 @@ class BibleApp {
 
         // Activer le nouvel outil
         const activeBtn = document.querySelector(`[data-tool="${tool}"]`);
+        console.log('Active button found:', activeBtn); // Debug
         if (activeBtn) {
             activeBtn.classList.add('active');
         }
 
         this.activeTool = tool;
+        console.log('Active tool set to:', this.activeTool); // Debug
 
         if (tool.startsWith('pencil-')) {
             this.enableHighlighting();
@@ -396,13 +401,17 @@ class BibleApp {
     }
 
     enableHighlighting() {
+        console.log('Enabling highlighting'); // Debug
         document.querySelectorAll('.verse').forEach(verse => {
             verse.style.cursor = 'pointer';
+            // Supprimer d'abord les écouteurs existants pour éviter les doublons
+            verse.removeEventListener('click', this.handleVerseClick.bind(this));
             verse.addEventListener('click', this.handleVerseClick.bind(this));
         });
     }
 
     disableHighlighting() {
+        console.log('Disabling highlighting'); // Debug
         document.querySelectorAll('.verse').forEach(verse => {
             verse.style.cursor = 'default';
             verse.removeEventListener('click', this.handleVerseClick.bind(this));
@@ -410,8 +419,11 @@ class BibleApp {
     }
 
     enableCommenting() {
+        console.log('Enabling commenting'); // Debug
         document.querySelectorAll('.verse').forEach(verse => {
             verse.style.cursor = 'pointer';
+            // Supprimer d'abord les écouteurs existants pour éviter les doublons
+            verse.removeEventListener('click', this.handleVerseClick.bind(this));
             verse.addEventListener('click', this.handleVerseClick.bind(this));
         });
     }
@@ -421,6 +433,7 @@ class BibleApp {
         if (!verseElement) return;
 
         const verseId = verseElement.dataset.verseId;
+        console.log('Verse clicked:', verseId, 'with tool:', this.activeTool); // Debug
 
         if (this.activeTool.startsWith('pencil-')) {
             await this.toggleHighlight(verseId, verseElement);
@@ -431,6 +444,7 @@ class BibleApp {
 
     async toggleHighlight(verseId, verseElement) {
         const color = this.activeTool.split('-')[1]; // Extraire la couleur
+        console.log('Toggling highlight with color:', color); // Debug
         
         // Retirer toutes les classes de highlight existantes
         verseElement.classList.remove('highlighted-blue', 'highlighted-red', 'highlighted-green');
@@ -438,9 +452,11 @@ class BibleApp {
         // Si le verset a déjà cette couleur, le désactiver
         if (verseElement.classList.contains(`highlighted-${color}`)) {
             verseElement.classList.remove(`highlighted-${color}`);
+            console.log('Removed highlight'); // Debug
         } else {
             // Sinon, appliquer la nouvelle couleur
             verseElement.classList.add(`highlighted-${color}`);
+            console.log('Added highlight:', `highlighted-${color}`); // Debug
         }
 
         if (this.supabase && this.currentUser) {
