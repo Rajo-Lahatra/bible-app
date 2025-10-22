@@ -35,12 +35,13 @@
                 </div>
                 <div id="user-menu" class="user-menu" style="display: none;">
                     <span id="user-email" class="user-email"></span>
+                    <button id="my-annotations-btn" class="auth-btn">Mes annotations</button>
                     <button id="logout-btn" class="auth-btn">Déconnexion</button>
                 </div>
             </div>
         </div>
 
-        <!-- Barre d'outils fixe CORRIGÉE -->
+        <!-- Barre d'outils fixe -->
         <div class="toolbar-fixed">
             <div class="toolbar-section">
                 <span class="toolbar-label">Outils:</span>
@@ -150,6 +151,55 @@
             <span class="close">&times;</span>
             <h3 id="preview-verse-title"></h3>
             <div id="preview-verse-content" class="preview-content"></div>
+        </div>
+    </div>
+
+    <!-- Modal de gestion des annotations -->
+    <div id="annotations-modal" class="modal">
+        <div class="modal-content annotations-modal-content">
+            <span class="close">&times;</span>
+            <h3>Mes annotations</h3>
+            
+            <div class="annotations-tabs">
+                <button class="annotation-tab active" data-tab="highlights">Surlignages</button>
+                <button class="annotation-tab" data-tab="comments">Commentaires</button>
+            </div>
+            
+            <div class="annotations-content">
+                <!-- Contenu des surlignages -->
+                <div id="highlights-tab" class="annotation-tab-content active">
+                    <div class="annotations-list" id="highlights-list">
+                        <!-- Les surlignages seront chargés ici -->
+                    </div>
+                </div>
+                
+                <!-- Contenu des commentaires -->
+                <div id="comments-tab" class="annotation-tab-content">
+                    <div class="annotations-list" id="comments-list">
+                        <!-- Les commentaires seront chargés ici -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal d'édition de commentaire -->
+    <div id="edit-comment-modal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h3>Modifier le commentaire</h3>
+            
+            <div class="verse-reference-display">
+                <strong>Verset:</strong> <span id="edit-verse-ref"></span>
+            </div>
+            
+            <textarea id="edit-comment-text" rows="6" placeholder="Modifiez votre commentaire..."></textarea>
+            
+            <div class="modal-actions">
+                <button id="update-comment" class="btn-primary">Mettre à jour</button>
+                <button id="delete-comment" class="btn-danger">Supprimer</button>
+                <button id="cancel-edit" class="btn-secondary">Annuler</button>
+            </div>
         </div>
     </div>
 

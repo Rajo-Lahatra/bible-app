@@ -7,7 +7,10 @@ import {
     getCurrentUser,
     signIn,
     signUp,
-    signOut
+    signOut,
+    deleteComment,
+    updateComment,
+    deleteHighlight
 } from './supabase-client.js';
 
 class BibleApp {
@@ -20,6 +23,7 @@ class BibleApp {
         this.displayMode = 'both';
         this.linkedVerses = []; // Pour stocker les versets liés
         this.currentUser = null;
+        this.editingCommentId = null;
         
         this.init();
     }
@@ -109,7 +113,6 @@ class BibleApp {
                 // Utiliser currentTarget pour toujours cibler le bouton
                 const button = e.currentTarget;
                 const tool = button.dataset.tool;
-                console.log('Tool clicked:', tool); // Debug
                 this.setActiveTool(tool);
             });
         });
@@ -139,11 +142,22 @@ class BibleApp {
             this.signOut();
         });
 
+        // Nouveau bouton "Mes annotations"
+        document.getElementById('my-annotations-btn').addEventListener('click', () => {
+            this.openAnnotationsModal();
+        });
+
         // Modal de commentaire
         this.initializeCommentModal();
         
         // Modal d'authentification
         this.initializeAuthModal();
+        
+        // Modal d'annotations
+        this.initializeAnnotationsModal();
+        
+        // Modal d'édition de commentaire
+        this.initializeEditCommentModal();
     }
 
     initializeAuthModal() {
@@ -173,6 +187,68 @@ class BibleApp {
         window.addEventListener('click', (e) => {
             if (e.target === authModal) {
                 authModal.style.display = 'none';
+            }
+        });
+    }
+
+    initializeAnnotationsModal() {
+        const modal = document.getElementById('annotations-modal');
+        const closeBtn = modal.querySelector('.close');
+        const tabs = document.querySelectorAll('.annotation-tab');
+
+        // Fermeture
+        closeBtn.addEventListener('click', () => {
+            modal.style.display = 'none';
+        });
+
+        // Navigation par onglets
+        tabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                const tabName = tab.dataset.tab;
+                
+                // Désactiver tous les onglets
+                tabs.forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('.annotation-tab-content').forEach(content => {
+                    content.classList.remove('active');
+                });
+                
+                // Activer l'onglet sélectionné
+                tab.classList.add('active');
+                document.getElementById(`${tabName}-tab`).classList.add('active');
+            });
+        });
+
+        // Fermer en cliquant à l'extérieur
+        window.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                modal.style.display = 'none';
+            }
+        });
+    }
+
+    initializeEditCommentModal() {
+        const modal = document.getElementById('edit-comment-modal');
+        const closeBtn = modal.querySelector('.close');
+
+        closeBtn.addEventListener('click', () => {
+            modal.style.display = 'none';
+        });
+
+        document.getElementById('update-comment').addEventListener('click', () => {
+            this.updateComment();
+        });
+
+        document.getElementById('delete-comment').addEventListener('click', () => {
+            this.deleteComment();
+        });
+
+        document.getElementById('cancel-edit').addEventListener('click', () => {
+            modal.style.display = 'none';
+        });
+
+        window.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                modal.style.display = 'none';
             }
         });
     }
@@ -368,8 +444,6 @@ class BibleApp {
     }
 
     setActiveTool(tool) {
-        console.log('Setting active tool:', tool); // Debug
-        
         // Vérifier que tool est défini
         if (!tool) {
             console.error('Tool is undefined');
@@ -383,13 +457,11 @@ class BibleApp {
 
         // Activer le nouvel outil
         const activeBtn = document.querySelector(`[data-tool="${tool}"]`);
-        console.log('Active button found:', activeBtn); // Debug
         if (activeBtn) {
             activeBtn.classList.add('active');
         }
 
         this.activeTool = tool;
-        console.log('Active tool set to:', this.activeTool); // Debug
 
         if (tool.startsWith('pencil-')) {
             this.enableHighlighting();
@@ -401,7 +473,6 @@ class BibleApp {
     }
 
     enableHighlighting() {
-        console.log('Enabling highlighting'); // Debug
         document.querySelectorAll('.verse').forEach(verse => {
             verse.style.cursor = 'pointer';
             // Supprimer d'abord les écouteurs existants pour éviter les doublons
@@ -411,7 +482,6 @@ class BibleApp {
     }
 
     disableHighlighting() {
-        console.log('Disabling highlighting'); // Debug
         document.querySelectorAll('.verse').forEach(verse => {
             verse.style.cursor = 'default';
             verse.removeEventListener('click', this.handleVerseClick.bind(this));
@@ -419,7 +489,6 @@ class BibleApp {
     }
 
     enableCommenting() {
-        console.log('Enabling commenting'); // Debug
         document.querySelectorAll('.verse').forEach(verse => {
             verse.style.cursor = 'pointer';
             // Supprimer d'abord les écouteurs existants pour éviter les doublons
@@ -433,7 +502,6 @@ class BibleApp {
         if (!verseElement) return;
 
         const verseId = verseElement.dataset.verseId;
-        console.log('Verse clicked:', verseId, 'with tool:', this.activeTool); // Debug
 
         if (this.activeTool.startsWith('pencil-')) {
             await this.toggleHighlight(verseId, verseElement);
@@ -444,7 +512,6 @@ class BibleApp {
 
     async toggleHighlight(verseId, verseElement) {
         const color = this.activeTool.split('-')[1]; // Extraire la couleur
-        console.log('Toggling highlight with color:', color); // Debug
         
         // Retirer toutes les classes de highlight existantes
         verseElement.classList.remove('highlighted-blue', 'highlighted-red', 'highlighted-green');
@@ -452,11 +519,9 @@ class BibleApp {
         // Si le verset a déjà cette couleur, le désactiver
         if (verseElement.classList.contains(`highlighted-${color}`)) {
             verseElement.classList.remove(`highlighted-${color}`);
-            console.log('Removed highlight'); // Debug
         } else {
             // Sinon, appliquer la nouvelle couleur
             verseElement.classList.add(`highlighted-${color}`);
-            console.log('Added highlight:', `highlighted-${color}`); // Debug
         }
 
         if (this.supabase && this.currentUser) {
@@ -698,6 +763,237 @@ class BibleApp {
         
         // Sauvegarder la préférence
         localStorage.setItem('theme', newTheme);
+    }
+
+    // NOUVELLES MÉTHODES POUR LA GESTION DES ANNOTATIONS
+
+    async openAnnotationsModal() {
+        if (!this.currentUser) {
+            this.showMessage('Veuillez vous connecter pour voir vos annotations', 'error');
+            this.openAuthModal('login');
+            return;
+        }
+
+        await this.loadAnnotationsData();
+        document.getElementById('annotations-modal').style.display = 'block';
+    }
+
+    async loadAnnotationsData() {
+        if (!this.supabase || !this.currentUser) return;
+
+        const userData = await getUserData(this.supabase);
+        this.displayHighlights(userData.highlights || []);
+        this.displayComments(userData.comments || []);
+    }
+
+    displayHighlights(highlights) {
+        const highlightsList = document.getElementById('highlights-list');
+        highlightsList.innerHTML = '';
+
+        if (highlights.length === 0) {
+            highlightsList.innerHTML = '<p class="no-annotations">Aucun surlignage sauvegardé</p>';
+            return;
+        }
+
+        highlights.forEach(highlight => {
+            const highlightItem = document.createElement('div');
+            highlightItem.className = 'annotation-item';
+            
+            highlightItem.innerHTML = `
+                <div class="annotation-content">
+                    <div class="annotation-header">
+                        <span class="verse-reference">${this.formatVerseId(highlight.verse_id)}</span>
+                        <span class="highlight-color ${highlight.color}"></span>
+                    </div>
+                    <div class="annotation-actions">
+                        <button class="btn-small btn-secondary goto-verse" data-verse-id="${highlight.verse_id}">Aller au verset</button>
+                        <button class="btn-small btn-danger remove-highlight" data-highlight-id="${highlight.id}">Supprimer</button>
+                    </div>
+                </div>
+            `;
+
+            // Aller au verset
+            highlightItem.querySelector('.goto-verse').addEventListener('click', () => {
+                this.goToVerse(highlight.verse_id);
+                document.getElementById('annotations-modal').style.display = 'none';
+            });
+
+            // Supprimer le surlignage
+            highlightItem.querySelector('.remove-highlight').addEventListener('click', async () => {
+                if (confirm('Voulez-vous vraiment supprimer ce surlignage ?')) {
+                    await this.removeHighlight(highlight.id, highlight.verse_id);
+                }
+            });
+
+            highlightsList.appendChild(highlightItem);
+        });
+    }
+
+    displayComments(comments) {
+        const commentsList = document.getElementById('comments-list');
+        commentsList.innerHTML = '';
+
+        if (comments.length === 0) {
+            commentsList.innerHTML = '<p class="no-annotations">Aucun commentaire sauvegardé</p>';
+            return;
+        }
+
+        comments.forEach(comment => {
+            const commentItem = document.createElement('div');
+            commentItem.className = 'annotation-item';
+            
+            // Limiter la longueur du commentaire pour l'affichage
+            const shortContent = comment.content.length > 100 
+                ? comment.content.substring(0, 100) + '...' 
+                : comment.content;
+
+            commentItem.innerHTML = `
+                <div class="annotation-content">
+                    <div class="annotation-header">
+                        <span class="verse-reference">${this.formatVerseId(comment.verse_id)}</span>
+                    </div>
+                    <div class="comment-preview">${shortContent}</div>
+                    <div class="annotation-actions">
+                        <button class="btn-small btn-secondary goto-verse" data-verse-id="${comment.verse_id}">Aller au verset</button>
+                        <button class="btn-small btn-primary edit-comment" data-comment-id="${comment.id}">Modifier</button>
+                        <button class="btn-small btn-danger remove-comment" data-comment-id="${comment.id}">Supprimer</button>
+                    </div>
+                </div>
+            `;
+
+            // Aller au verset
+            commentItem.querySelector('.goto-verse').addEventListener('click', () => {
+                this.goToVerse(comment.verse_id);
+                document.getElementById('annotations-modal').style.display = 'none';
+            });
+
+            // Modifier le commentaire
+            commentItem.querySelector('.edit-comment').addEventListener('click', () => {
+                this.openEditCommentModal(comment);
+            });
+
+            // Supprimer le commentaire
+            commentItem.querySelector('.remove-comment').addEventListener('click', async () => {
+                if (confirm('Voulez-vous vraiment supprimer ce commentaire ?')) {
+                    await this.removeComment(comment.id);
+                }
+            });
+
+            commentsList.appendChild(commentItem);
+        });
+    }
+
+    formatVerseId(verseId) {
+        const [book, chapter, verse] = verseId.split('-');
+        return `${book} ${chapter}:${verse}`;
+    }
+
+    async goToVerse(verseId) {
+        const [book, chapter, verse] = verseId.split('-');
+        
+        // Mettre à jour les sélecteurs
+        document.getElementById('book-select').value = book;
+        await this.onBookSelect(book);
+        
+        document.getElementById('chapter-select').value = chapter;
+        await this.onChapterSelect(chapter);
+        
+        // Faire défiler jusqu'au verset
+        setTimeout(() => {
+            const verseElement = document.querySelector(`[data-verse-id="${verseId}"]`);
+            if (verseElement) {
+                verseElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                verseElement.style.backgroundColor = 'var(--hover-color)';
+                setTimeout(() => {
+                    verseElement.style.backgroundColor = '';
+                }, 2000);
+            }
+        }, 500);
+    }
+
+    openEditCommentModal(comment) {
+        this.editingCommentId = comment.id;
+        
+        document.getElementById('edit-verse-ref').textContent = this.formatVerseId(comment.verse_id);
+        document.getElementById('edit-comment-text').value = comment.content;
+        
+        document.getElementById('edit-comment-modal').style.display = 'block';
+        document.getElementById('annotations-modal').style.display = 'none';
+    }
+
+    async updateComment() {
+        const newContent = document.getElementById('edit-comment-text').value.trim();
+        
+        if (!newContent) {
+            alert('Le commentaire ne peut pas être vide');
+            return;
+        }
+
+        try {
+            await updateComment(this.supabase, this.editingCommentId, newContent);
+            this.showMessage('Commentaire mis à jour avec succès', 'success');
+            document.getElementById('edit-comment-modal').style.display = 'none';
+            await this.loadAnnotationsData(); // Recharger les données
+        } catch (error) {
+            console.error('Erreur lors de la mise à jour du commentaire:', error);
+            this.showMessage('Erreur lors de la mise à jour du commentaire', 'error');
+        }
+    }
+
+    async deleteComment() {
+        if (!confirm('Voulez-vous vraiment supprimer définitivement ce commentaire ?')) {
+            return;
+        }
+
+        try {
+            await deleteComment(this.supabase, this.editingCommentId);
+            this.showMessage('Commentaire supprimé avec succès', 'success');
+            document.getElementById('edit-comment-modal').style.display = 'none';
+            await this.loadAnnotationsData(); // Recharger les données
+            await this.loadUserData(); // Mettre à jour l'affichage dans la Bible
+        } catch (error) {
+            console.error('Erreur lors de la suppression du commentaire:', error);
+            this.showMessage('Erreur lors de la suppression du commentaire', 'error');
+        }
+    }
+
+    async removeHighlight(highlightId, verseId) {
+        try {
+            await deleteHighlight(this.supabase, highlightId);
+            this.showMessage('Surlignage supprimé avec succès', 'success');
+            
+            // Mettre à jour l'affichage dans la Bible
+            const verseElement = document.querySelector(`[data-verse-id="${verseId}"]`);
+            if (verseElement) {
+                verseElement.classList.remove('highlighted-blue', 'highlighted-red', 'highlighted-green');
+            }
+            
+            await this.loadAnnotationsData(); // Recharger les données
+        } catch (error) {
+            console.error('Erreur lors de la suppression du surlignage:', error);
+            this.showMessage('Erreur lors de la suppression du surlignage', 'error');
+        }
+    }
+
+    async removeComment(commentId) {
+        try {
+            await deleteComment(this.supabase, commentId);
+            this.showMessage('Commentaire supprimé avec succès', 'success');
+            
+            // Mettre à jour l'affichage dans la Bible
+            const commentElements = document.querySelectorAll('.verse-comment');
+            commentElements.forEach(element => {
+                if (element.textContent.includes(commentId)) {
+                    element.remove();
+                }
+            });
+            
+            await this.loadAnnotationsData(); // Recharger les données
+            await this.loadUserData(); // Recharger les données utilisateur
+        } catch (error) {
+            console.error('Erreur lors de la suppression du commentaire:', error);
+            this.showMessage('Erreur lors de la suppression du commentaire', 'error');
+        }
     }
 }
 

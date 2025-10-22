@@ -140,3 +140,37 @@ export async function getUserData(supabase) {
         comments: commentsRes.data || []
     };
 }
+// Ajoutez ces fonctions à votre fichier supabase-client.js existant
+
+// Supprimer un commentaire
+export async function deleteComment(supabase, commentId) {
+    const { error } = await supabase
+        .from('comments')
+        .delete()
+        .eq('id', commentId);
+    
+    if (error) throw error;
+}
+
+// Mettre à jour un commentaire
+export async function updateComment(supabase, commentId, newContent) {
+    const { error } = await supabase
+        .from('comments')
+        .update({ 
+            content: newContent,
+            updated_at: new Date().toISOString()
+        })
+        .eq('id', commentId);
+    
+    if (error) throw error;
+}
+
+// Supprimer un surlignage
+export async function deleteHighlight(supabase, highlightId) {
+    const { error } = await supabase
+        .from('highlights')
+        .delete()
+        .eq('id', highlightId);
+    
+    if (error) throw error;
+}
