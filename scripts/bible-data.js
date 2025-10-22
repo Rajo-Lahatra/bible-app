@@ -133,7 +133,7 @@ export const frenchToMalagasyMapping = {
     "NEHEMIE": "Nehemia", "NÉHÉMIE": "Nehemia", "Néhémie": "Nehemia",
     "ESTHER": "Estera", "Esther": "Estera",
     "JOB": "Joba", "Job": "Joba",
-    "PSAUMES": "Salamo", "Psaumes": "Salamo",
+    "PSAUMES": "Salamo", "Psaumes": "Salamo", "Psaume": "Salamo", // Ajout de "Psaume" au singulier
     "PROVERBES": "Ohabolana", "Proverbes": "Ohabolana",
     "ECCLESIASTE": "Mpitoriteny", "ECCLÉSIASTE": "Mpitoriteny", "Ecclésiaste": "Mpitoriteny",
     "CANTIQUE DES CANTIQUES": "Tonon-kiran'i Solomona", "Cantique des Cantiques": "Tonon-kiran'i Solomona",
@@ -256,7 +256,7 @@ async function loadFrenchBibleFromFile() {
     }
 }
 
-// NOUVEAU PARSER POUR LE FORMAT DE FICHIER FRANÇAIS
+// NOUVEAU PARSER POUR LE FORMAT DE FICHIER FRANÇAIS - VERSION CORRIGÉE POUR PSAUMES
 function parseFrenchBibleText(text) {
     const books = {};
     const lines = text.split('\n');
@@ -293,8 +293,12 @@ function parseFrenchBibleText(text) {
             continue;
         }
 
-        // Détection des chapitres (format: "Chapitre X")
-        const chapterMatch = line.match(/^Chapitre\s+(\d+)/i);
+        // Détection des chapitres (format: "Chapitre X" ou "Psaume X" pour le livre des Psaumes)
+        let chapterMatch = line.match(/^Chapitre\s+(\d+)/i);
+        if (!chapterMatch) {
+            // Cas spécial pour les Psaumes : "Psaume X"
+            chapterMatch = line.match(/^Psaume\s+(\d+)/i);
+        }
         if (chapterMatch) {
             // Sauvegarder le verset précédent si on en a un
             if (currentBook && currentChapter !== null && currentVerse !== null && currentText) {
