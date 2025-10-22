@@ -26,11 +26,6 @@ export async function initSupabase() {
     return supabaseInstance;
 }
 
-// Fonction pour obtenir le client Supabase
-export async function createClient() {
-    return await initSupabase();
-}
-
 // Fonctions d'authentification
 export async function signUp(email, password) {
     const supabase = await initSupabase();
@@ -40,7 +35,6 @@ export async function signUp(email, password) {
         email: email,
         password: password,
         options: {
-            // Désactiver la confirmation email si configuré dans Supabase
             emailRedirectTo: window.location.origin
         }
     });
@@ -88,46 +82,108 @@ export async function getSession() {
 
 // Fonctions pour les données utilisateur
 export async function saveHighlight(supabase, verseId, color) {
-    const { data: { user } } = await supabase.auth.getUser();
+    const user = await getCurrentUser();
     if (!user) throw new Error('Utilisateur non connecté');
 
     if (color) {
-        await supabase
+        const { data, error } = await supabase
             .from('highlights')
             .upsert({
                 user_id: user.id,
                 verse_id: verseId,
                 color: color,
-                created_at: new Date().toISOString()
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString()
             }, {
                 onConflict: 'user_id,verse_id'
             });
+        
+        if (error) throw error;
+        return data;
     } else {
-        await supabase
+        const { error } = await supabase
             .from('highlights')
             .delete()
             .eq('user_id', user.id)
             .eq('verse_id', verseId);
+        
+        if (error) throw error;
     }
 }
 
-export async function saveComment(supabase, verseId, content, linkedVerse = null) {
-    const { data: { user } } = await supabase.auth.getUser();
+export async function saveComment(supabase, verseId, content, linkedVerses = '') {
+    const user = await getCurrentUser();
     if (!user) throw new Error('Utilisateur non connecté');
 
-    await supabase
+    const { data, error } = await supabase
         .from('comments')
         .insert({
             user_id: user.id,
             verse_id: verseId,
             content: content,
-            linked_verse: linkedVerse,
-            created_at: new Date().toISOString()
+            linked_verse: linkedVerses,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
         });
+    
+    if (error) throw error;
+    return data;
+}
+
+export async function updateComment(supabase, commentId, newContent) {
+    const user = await getCurrentUser();
+    if (!user) throw new Error('Utilisateur non connecté');
+
+    const { data, error } = await supabase
+        .from('comments')
+        .update({ 
+            content: newContent,
+            updated_at: new Date().toISOString()
+        })
+        .eq('id', commentId)
+        .eq('user_id', user.id); // S'assurer que l'utilisateur ne peut modifier que ses propres commentaires
+    
+    if (error) {
+        console.error('Erreur détaillée Supabase:', error);
+        throw error;
+    }
+    return data;
+}
+
+export async function deleteComment(supabase, commentId) {
+    const user = await getCurrentUser();
+    if (!user) throw new Error('Utilisateur non connecté');
+
+    const { error } = await supabase
+        .from('comments')
+        .delete()
+        .eq('id', commentId)
+        .eq('user_id', user.id); // S'assurer que l'utilisateur ne peut supprimer que ses propres commentaires
+    
+    if (error) {
+        console.error('Erreur détaillée Supabase:', error);
+        throw error;
+    }
+}
+
+export async function deleteHighlight(supabase, highlightId) {
+    const user = await getCurrentUser();
+    if (!user) throw new Error('Utilisateur non connecté');
+
+    const { error } = await supabase
+        .from('highlights')
+        .delete()
+        .eq('id', highlightId)
+        .eq('user_id', user.id); // S'assurer que l'utilisateur ne peut supprimer que ses propres surlignages
+    
+    if (error) {
+        console.error('Erreur détaillée Supabase:', error);
+        throw error;
+    }
 }
 
 export async function getUserData(supabase) {
-    const { data: { user } } = await supabase.auth.getUser();
+    const user = await getCurrentUser();
     if (!user) return { highlights: [], comments: [] };
 
     const [highlightsRes, commentsRes] = await Promise.all([
@@ -135,42 +191,11 @@ export async function getUserData(supabase) {
         supabase.from('comments').select('*').eq('user_id', user.id)
     ]);
 
+    if (highlightsRes.error) throw highlightsRes.error;
+    if (commentsRes.error) throw commentsRes.error;
+
     return {
         highlights: highlightsRes.data || [],
         comments: commentsRes.data || []
     };
-}
-// Ajoutez ces fonctions à votre fichier supabase-client.js existant
-
-// Supprimer un commentaire
-export async function deleteComment(supabase, commentId) {
-    const { error } = await supabase
-        .from('comments')
-        .delete()
-        .eq('id', commentId);
-    
-    if (error) throw error;
-}
-
-// Mettre à jour un commentaire
-export async function updateComment(supabase, commentId, newContent) {
-    const { error } = await supabase
-        .from('comments')
-        .update({ 
-            content: newContent,
-            updated_at: new Date().toISOString()
-        })
-        .eq('id', commentId);
-    
-    if (error) throw error;
-}
-
-// Supprimer un surlignage
-export async function deleteHighlight(supabase, highlightId) {
-    const { error } = await supabase
-        .from('highlights')
-        .delete()
-        .eq('id', highlightId);
-    
-    if (error) throw error;
 }
