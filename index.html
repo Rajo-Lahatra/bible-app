@@ -10,39 +10,72 @@
 <body>
     <header class="app-header">
         <div class="header-main-controls">
-            <select id="book-select">
-                <option value="">Choisir un livre</option>
-            </select>
-            <select id="chapter-select">
-                <option value="">Chapitre</option>
-            </select>
-            
-            <!-- Boutons de mode d'affichage -->
-            <div class="display-mode-container">
-                <span class="mode-label">Affichage:</span>
-                <button class="display-mode-btn active" data-mode="both">Les deux</button>
-                <button class="display-mode-btn" data-mode="malagasy-only">Malgache</button>
-                <button class="display-mode-btn" data-mode="french-only">Français</button>
-            </div>
-            
-            <button id="theme-toggle">🌙</button>
+        <select id="book-select">
+            <option value="">Choisir un livre</option>
+        </select>
+        <select id="chapter-select">
+            <option value="">Chapitre</option>
+        </select>
+        
+        <!-- Boutons de mode d'affichage -->
+        <div class="display-mode-container">
+            <span class="mode-label">Affichage:</span>
+            <button class="display-mode-btn active" data-mode="both">Les deux</button>
+            <button class="display-mode-btn" data-mode="malagasy-only">Malgache</button>
+            <button class="display-mode-btn" data-mode="french-only">Français</button>
         </div>
+        
+        <button id="theme-toggle">🌙</button>
+        
+        <!-- Section d'authentification -->
+        <div class="auth-section">
+            <div id="auth-buttons" class="auth-buttons">
+                <button id="login-btn" class="auth-btn">Se connecter</button>
+                <button id="signup-btn" class="auth-btn">Créer un compte</button>
+            </div>
+            <div id="user-menu" class="user-menu" style="display: none;">
+                <span id="user-email" class="user-email"></span>
+                <button id="logout-btn" class="auth-btn">Déconnexion</button>
+            </div>
+        </div>
+    </div>
 
-        <!-- Nouvelle barre d'outils fixe -->
-        <div class="toolbar-fixed">
-            <div class="toolbar-section">
-                <span class="toolbar-label">Couleurs:</span>
-                <button class="tool-btn pencil-btn" data-tool="pencil-blue" data-color="blue" title="Bleu">🔵</button>
-                <button class="tool-btn pencil-btn" data-tool="pencil-red" data-color="red" title="Rouge">🔴</button>
-                <button class="tool-btn pencil-btn" data-tool="pencil-green" data-color="green" title="Vert">🟢</button>
-                <button class="tool-btn" data-tool="pointer" title="Pointeur normal">✖️ Annuler</button>
+    <!-- Barre d'outils fixe (reste inchangée) -->
+    <div class="toolbar-fixed">
+        <!-- ... votre barre d'outils existante ... -->
+    </div>
+</header>
+
+<!-- Modales d'authentification -->
+<div id="auth-modal" class="modal">
+    <div class="modal-content auth-modal-content">
+        <span class="close">&times;</span>
+        <h3 id="auth-modal-title">Connexion</h3>
+        
+        <form id="auth-form">
+            <div class="form-group">
+                <label for="auth-email">Email:</label>
+                <input type="email" id="auth-email" required>
             </div>
             
-            <div class="toolbar-section">
-                <span class="toolbar-label">Actions:</span>
-                <button class="tool-btn" data-tool="comment" title="Ajouter un commentaire">💬 Commenter</button>
+            <div class="form-group">
+                <label for="auth-password">Mot de passe:</label>
+                <input type="password" id="auth-password" required>
             </div>
+            
+            <div id="auth-error" class="error-message" style="display: none;"></div>
+            
+            <div class="modal-actions">
+                <button type="submit" id="auth-submit-btn" class="btn-primary">Se connecter</button>
+                <button type="button" id="auth-switch-btn" class="btn-secondary">Créer un compte</button>
+            </div>
+        </form>
+        
+        <div class="auth-footer">
+            <p><small>En créant un compte, vous pourrez sauvegarder vos surlignages et commentaires.</small></p>
         </div>
+    </div>
+</div>
     </header>
 
     <main class="bible-container">

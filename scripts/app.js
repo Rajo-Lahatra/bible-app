@@ -3,7 +3,11 @@ import {
     saveHighlight, 
     saveComment, 
     getUserData,
-    initSupabase 
+    initSupabase,
+    getCurrentUser,
+    signIn,
+    signUp,
+    signOut
 } from './supabase-client.js';
 
 class BibleApp {
@@ -15,6 +19,7 @@ class BibleApp {
         this.supabase = null;
         this.displayMode = 'both';
         this.linkedVerses = []; // Pour stocker les versets liés
+        this.currentUser = null;
         
         this.init();
     }
@@ -23,6 +28,12 @@ class BibleApp {
         // Initialiser Supabase
         this.supabase = await initSupabase();
         
+        // Configurer les écouteurs d'authentification
+        this.setupAuthListeners();
+        
+        // Vérifier l'état d'authentification actuel
+        await this.checkAuthState();
+        
         // Charger les données bibliques
         await initializeApp();
         
@@ -30,8 +41,55 @@ class BibleApp {
         this.initializeEvents();
         
         // Charger les données utilisateur si connecté
-        if (this.supabase) {
+        if (this.currentUser) {
             await this.loadUserData();
+        }
+    }
+
+    setupAuthListeners() {
+        if (!this.supabase) return;
+
+        // Écouter les changements d'authentification
+        this.supabase.auth.onAuthStateChange((event, session) => {
+            console.log('Changement d\'état auth:', event, session?.user?.email);
+            
+            if (event === 'SIGNED_IN') {
+                this.currentUser = session.user;
+                this.updateAuthUI();
+                this.loadUserData();
+            } else if (event === 'SIGNED_OUT') {
+                this.currentUser = null;
+                this.updateAuthUI();
+                this.clearUserData();
+            }
+        });
+    }
+
+    async checkAuthState() {
+        try {
+            const user = await getCurrentUser();
+            this.currentUser = user;
+            this.updateAuthUI();
+        } catch (error) {
+            console.error('Erreur vérification état auth:', error);
+            this.currentUser = null;
+        }
+    }
+
+    updateAuthUI() {
+        const authButtons = document.getElementById('auth-buttons');
+        const userMenu = document.getElementById('user-menu');
+        const userEmail = document.getElementById('user-email');
+
+        if (this.currentUser) {
+            // Utilisateur connecté
+            authButtons.style.display = 'none';
+            userMenu.style.display = 'flex';
+            userEmail.textContent = this.currentUser.email;
+        } else {
+            // Utilisateur non connecté
+            authButtons.style.display = 'flex';
+            userMenu.style.display = 'none';
         }
     }
 
@@ -66,8 +124,171 @@ class BibleApp {
             this.toggleTheme();
         });
 
+        // Authentification
+        document.getElementById('login-btn').addEventListener('click', () => {
+            this.openAuthModal('login');
+        });
+
+        document.getElementById('signup-btn').addEventListener('click', () => {
+            this.openAuthModal('signup');
+        });
+
+        document.getElementById('logout-btn').addEventListener('click', () => {
+            this.signOut();
+        });
+
         // Modal de commentaire
         this.initializeCommentModal();
+        
+        // Modal d'authentification
+        this.initializeAuthModal();
+    }
+
+    initializeAuthModal() {
+        const authModal = document.getElementById('auth-modal');
+        const authForm = document.getElementById('auth-form');
+        const authSwitchBtn = document.getElementById('auth-switch-btn');
+        const closeBtn = authModal.querySelector('.close');
+
+        // Fermeture
+        closeBtn.addEventListener('click', () => {
+            authModal.style.display = 'none';
+        });
+
+        // Switch entre connexion/inscription
+        authSwitchBtn.addEventListener('click', () => {
+            const isLogin = authSwitchBtn.textContent === 'Créer un compte';
+            this.openAuthModal(isLogin ? 'signup' : 'login');
+        });
+
+        // Soumission du formulaire
+        authForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            this.handleAuthSubmit();
+        });
+
+        // Fermer en cliquant à l'extérieur
+        window.addEventListener('click', (e) => {
+            if (e.target === authModal) {
+                authModal.style.display = 'none';
+            }
+        });
+    }
+
+    openAuthModal(mode = 'login') {
+        const authModal = document.getElementById('auth-modal');
+        const authTitle = document.getElementById('auth-modal-title');
+        const authSubmitBtn = document.getElementById('auth-submit-btn');
+        const authSwitchBtn = document.getElementById('auth-switch-btn');
+        const authForm = document.getElementById('auth-form');
+        const errorDiv = document.getElementById('auth-error');
+
+        // Cacher les erreurs
+        errorDiv.style.display = 'none';
+
+        if (mode === 'login') {
+            authTitle.textContent = 'Connexion';
+            authSubmitBtn.textContent = 'Se connecter';
+            authSwitchBtn.textContent = 'Créer un compte';
+        } else {
+            authTitle.textContent = 'Créer un compte';
+            authSubmitBtn.textContent = 'Créer un compte';
+            authSwitchBtn.textContent = 'Se connecter';
+        }
+
+        // Réinitialiser le formulaire
+        authForm.reset();
+        authModal.style.display = 'block';
+        
+        // Stocker le mode actuel
+        authModal.dataset.mode = mode;
+    }
+
+    async handleAuthSubmit() {
+        const authModal = document.getElementById('auth-modal');
+        const email = document.getElementById('auth-email').value;
+        const password = document.getElementById('auth-password').value;
+        const errorDiv = document.getElementById('auth-error');
+        const submitBtn = document.getElementById('auth-submit-btn');
+        const mode = authModal.dataset.mode;
+
+        // Cacher les erreurs précédentes
+        errorDiv.style.display = 'none';
+        submitBtn.disabled = true;
+        submitBtn.textContent = mode === 'login' ? 'Connexion...' : 'Création...';
+
+        try {
+            if (mode === 'login') {
+                await signIn(email, password);
+                this.showMessage('Connexion réussie!', 'success');
+            } else {
+                await signUp(email, password);
+                this.showMessage('Compte créé avec succès! Vous êtes maintenant connecté.', 'success');
+            }
+            
+            authModal.style.display = 'none';
+        } catch (error) {
+            console.error('Erreur auth:', error);
+            errorDiv.textContent = error.message;
+            errorDiv.style.display = 'block';
+        } finally {
+            submitBtn.disabled = false;
+            submitBtn.textContent = mode === 'login' ? 'Se connecter' : 'Créer un compte';
+        }
+    }
+
+    async signOut() {
+        try {
+            await signOut();
+            this.showMessage('Déconnexion réussie', 'info');
+        } catch (error) {
+            console.error('Erreur déconnexion:', error);
+            this.showMessage('Erreur lors de la déconnexion', 'error');
+        }
+    }
+
+    showMessage(message, type = 'info') {
+        // Créer une notification temporaire
+        const notification = document.createElement('div');
+        notification.className = `notification notification-${type}`;
+        notification.textContent = message;
+        
+        notification.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 1rem 1.5rem;
+            border-radius: 6px;
+            color: white;
+            z-index: 1000;
+            max-width: 300px;
+            animation: slideIn 0.3s ease;
+        `;
+        
+        if (type === 'success') {
+            notification.style.background = '#10b981';
+        } else if (type === 'error') {
+            notification.style.background = '#ef4444';
+        } else {
+            notification.style.background = '#3b82f6';
+        }
+        
+        document.body.appendChild(notification);
+        
+        setTimeout(() => {
+            notification.remove();
+        }, 3000);
+    }
+
+    clearUserData() {
+        // Retirer les surlignages et commentaires de l'interface
+        document.querySelectorAll('.verse').forEach(verse => {
+            verse.classList.remove('highlighted-blue', 'highlighted-red', 'highlighted-green');
+            const commentDiv = verse.querySelector('.verse-comment');
+            if (commentDiv) {
+                commentDiv.remove();
+            }
+        });
     }
 
     initializeCommentModal() {
@@ -215,13 +436,20 @@ class BibleApp {
             verseElement.classList.add(`highlighted-${color}`);
         }
 
-        if (this.supabase) {
+        if (this.supabase && this.currentUser) {
             const isHighlighted = verseElement.classList.contains(`highlighted-${color}`);
             await saveHighlight(this.supabase, verseId, isHighlighted ? color : null);
         }
     }
 
     openCommentModal(verseId, verseElement) {
+        // Vérifier si l'utilisateur est connecté
+        if (!this.currentUser) {
+            this.showMessage('Veuillez vous connecter pour ajouter un commentaire', 'error');
+            this.openAuthModal('login');
+            return;
+        }
+
         this.selectedVerse = verseId;
         this.linkedVerses = [];
         
@@ -348,7 +576,7 @@ class BibleApp {
             return;
         }
 
-        if (this.supabase && this.selectedVerse) {
+        if (this.supabase && this.selectedVerse && this.currentUser) {
             const linkedVersesIds = this.linkedVerses.map(v => v.verseId).join(';');
             
             await saveComment(this.supabase, this.selectedVerse, commentText, linkedVersesIds);
@@ -380,7 +608,7 @@ class BibleApp {
     }
 
     async loadUserData() {
-        if (!this.supabase) return;
+        if (!this.supabase || !this.currentUser) return;
         
         const userData = await getUserData(this.supabase);
         this.displayUserData(userData);
