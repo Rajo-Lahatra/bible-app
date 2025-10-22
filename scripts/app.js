@@ -103,12 +103,13 @@ class BibleApp {
             this.onChapterSelect(e.target.value);
         });
 
-        // Outils de crayon et commentaire
+        // Outils de crayon et commentaire - CORRECTION ICI
         document.querySelectorAll('.tool-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
-                const tool = e.target.dataset.tool;
-                const color = e.target.dataset.color;
-                this.setActiveTool(tool, color);
+                // Utiliser currentTarget pour toujours cibler le bouton
+                const button = e.currentTarget;
+                const tool = button.dataset.tool;
+                this.setActiveTool(tool);
             });
         });
 
@@ -365,7 +366,13 @@ class BibleApp {
         });
     }
 
-    setActiveTool(tool, color = null) {
+    setActiveTool(tool) {
+        // Vérifier que tool est défini
+        if (!tool) {
+            console.error('Tool is undefined');
+            return;
+        }
+
         // Désactiver tous les outils
         document.querySelectorAll('.tool-btn').forEach(btn => {
             btn.classList.remove('active');
@@ -377,7 +384,7 @@ class BibleApp {
             activeBtn.classList.add('active');
         }
 
-        this.activeTool = (tool === 'pencil' && color) ? `pencil-${color}` : tool;
+        this.activeTool = tool;
 
         if (tool.startsWith('pencil-')) {
             this.enableHighlighting();
