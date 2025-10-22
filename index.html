@@ -3,14 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bible en Malgache et en Français</title>
+    <title>Bible : Malgache-Français</title>
     <link rel="stylesheet" href="styles/main.css">
-    <link rel="stylesheet" href="styles/responsive.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
     <header class="app-header">
-        <div class="header-controls">
+        <div class="header-main-controls">
             <select id="book-select">
                 <option value="">Choisir un livre</option>
             </select>
@@ -18,7 +17,7 @@
                 <option value="">Chapitre</option>
             </select>
             
-            <!-- Ajout des boutons de mode d'affichage -->
+            <!-- Boutons de mode d'affichage -->
             <div class="display-mode-container">
                 <span class="mode-label">Affichage:</span>
                 <button class="display-mode-btn active" data-mode="both">Les deux</button>
@@ -28,47 +27,83 @@
             
             <button id="theme-toggle">🌙</button>
         </div>
+
+        <!-- Nouvelle barre d'outils fixe -->
+        <div class="toolbar-fixed">
+            <div class="toolbar-section">
+                <span class="toolbar-label">Couleurs:</span>
+                <button class="tool-btn pencil-btn" data-tool="pencil-blue" data-color="blue" title="Bleu">🔵</button>
+                <button class="tool-btn pencil-btn" data-tool="pencil-red" data-color="red" title="Rouge">🔴</button>
+                <button class="tool-btn pencil-btn" data-tool="pencil-green" data-color="green" title="Vert">🟢</button>
+                <button class="tool-btn" data-tool="pointer" title="Pointeur normal">✖️ Annuler</button>
+            </div>
+            
+            <div class="toolbar-section">
+                <span class="toolbar-label">Actions:</span>
+                <button class="tool-btn" data-tool="comment" title="Ajouter un commentaire">💬 Commenter</button>
+            </div>
+        </div>
     </header>
 
     <main class="bible-container">
         <div class="bible-column" id="malagasy-column">
             <div class="column-header">
-                <h3>Bible en Malgache</h3>
-                <div class="tools">
-                    <button class="tool-btn" data-tool="highlight">🖍️</button>
-                    <button class="tool-btn" data-tool="comment">💬</button>
-                </div>
+                <h3>Bible Malgache</h3>
             </div>
             <div class="verses-container" id="malagasy-verses"></div>
         </div>
 
         <div class="bible-column" id="french-column">
             <div class="column-header">
-                <h3>Bible en Français</h3>
-                <div class="tools">
-                    <button class="tool-btn" data-tool="highlight">🖍️</button>
-                    <button class="tool-btn" data-tool="comment">💬</button>
-                </div>
+                <h3>Bible Française (LSG)</h3>
             </div>
             <div class="verses-container" id="french-verses"></div>
         </div>
     </main>
 
-    <!-- Modals -->
+    <!-- Modal de commentaire amélioré -->
     <div id="comment-modal" class="modal">
         <div class="modal-content">
             <span class="close">&times;</span>
             <h3>Ajouter un commentaire</h3>
-            <textarea id="comment-text" rows="6"></textarea>
-            <input type="text" id="verse-link" placeholder="Lier à un verset (ex: Jean 3:16)">
+            
+            <div class="verse-reference-display">
+                <strong>Verset:</strong> <span id="current-verse-ref"></span>
+            </div>
+            
+            <textarea id="comment-text" rows="6" placeholder="Tapez votre commentaire ici..."></textarea>
+            
+            <div class="link-verse-section">
+                <h4>Lier à un autre verset</h4>
+                <div class="verse-link-inputs">
+                    <select id="link-book-select">
+                        <option value="">Choisir un livre</option>
+                    </select>
+                    <select id="link-chapter-select">
+                        <option value="">Chapitre</option>
+                    </select>
+                    <input type="number" id="link-verse-input" placeholder="Verset" min="1">
+                    <button type="button" id="add-verse-link">+ Ajouter</button>
+                </div>
+                <div id="linked-verses-list" class="linked-verses-list"></div>
+            </div>
+            
             <div class="modal-actions">
-                <button id="save-comment">Sauvegarder</button>
-                <button id="cancel-comment">Annuler</button>
+                <button id="save-comment" class="btn-primary">Sauvegarder</button>
+                <button id="cancel-comment" class="btn-secondary">Annuler</button>
             </div>
         </div>
     </div>
 
+    <!-- Modal d'affichage des versets liés -->
+    <div id="verse-preview-modal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h3 id="preview-verse-title"></h3>
+            <div id="preview-verse-content" class="preview-content"></div>
+        </div>
+    </div>
+
     <script type="module" src="scripts/app.js"></script>
-    
 </body>
 </html>

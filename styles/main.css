@@ -362,3 +362,212 @@ textarea, input[type="text"] {
         margin-bottom: 0.25rem;
     }
 }
+
+.toolbar-fixed {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: var(--card-bg);
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--border-color);
+    position: sticky;
+    top: 0;
+    z-index: 90;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.toolbar-section {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.toolbar-label {
+    font-size: 0.9rem;
+    color: var(--text-color);
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+/* Boutons d'outils */
+.tool-btn {
+    padding: 0.5rem 0.75rem;
+    border: 1px solid var(--border-color);
+    background: var(--bg-color);
+    color: var(--text-color);
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+}
+
+.tool-btn:hover {
+    background: var(--hover-color);
+    border-color: var(--secondary-color);
+}
+
+.tool-btn.active {
+    background: var(--secondary-color);
+    color: white;
+    border-color: var(--secondary-color);
+}
+
+.pencil-btn.active {
+    transform: scale(1.1);
+    box-shadow: 0 0 0 2px var(--secondary-color);
+}
+
+/* Styles pour le texte coloré */
+.verse.highlighted-blue {
+    color: #2563eb !important;
+    font-weight: 500;
+}
+
+.verse.highlighted-red {
+    color: #dc2626 !important;
+    font-weight: 500;
+}
+
+.verse.highlighted-green {
+    color: #16a34a !important;
+    font-weight: 500;
+}
+
+/* Modal de commentaire amélioré */
+.verse-reference-display {
+    background: var(--hover-color);
+    padding: 0.75rem;
+    border-radius: 6px;
+    margin-bottom: 1rem;
+    border-left: 3px solid var(--secondary-color);
+}
+
+.link-verse-section {
+    margin: 1rem 0;
+    padding: 1rem;
+    background: var(--card-bg);
+    border-radius: 6px;
+    border: 1px solid var(--border-color);
+}
+
+.verse-link-inputs {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    margin-bottom: 1rem;
+}
+
+.verse-link-inputs select,
+.verse-link-inputs input {
+    padding: 0.5rem;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    background: var(--bg-color);
+    color: var(--text-color);
+    min-width: 120px;
+}
+
+.linked-verses-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.linked-verse-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem;
+    background: var(--hover-color);
+    border-radius: 4px;
+    border-left: 3px solid var(--secondary-color);
+}
+
+.linked-verse-text {
+    flex: 1;
+    font-size: 0.9rem;
+}
+
+.remove-verse-link {
+    background: var(--accent-color);
+    color: white;
+    border: none;
+    border-radius: 4px;
+    padding: 0.25rem 0.5rem;
+    cursor: pointer;
+    font-size: 0.8rem;
+}
+
+.verse-link {
+    color: var(--secondary-color);
+    text-decoration: underline;
+    cursor: pointer;
+}
+
+.verse-link:hover {
+    color: var(--primary-color);
+}
+
+/* Modal de prévisualisation */
+.preview-content {
+    max-height: 400px;
+    overflow-y: auto;
+    padding: 1rem;
+    background: var(--card-bg);
+    border-radius: 6px;
+    border: 1px solid var(--border-color);
+}
+
+/* Boutons */
+.btn-primary {
+    background: var(--secondary-color);
+    color: white;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 1rem;
+}
+
+.btn-primary:hover {
+    background: var(--primary-color);
+}
+
+.btn-secondary {
+    background: var(--card-bg);
+    color: var(--text-color);
+    border: 1px solid var(--border-color);
+    padding: 0.75rem 1.5rem;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 1rem;
+}
+
+.btn-secondary:hover {
+    background: var(--hover-color);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .toolbar-fixed {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    
+    .toolbar-section {
+        justify-content: center;
+        width: 100%;
+    }
+    
+    .verse-link-inputs {
+        flex-direction: column;
+    }
+    
+    .verse-link-inputs select,
+    .verse-link-inputs input {
+        min-width: auto;
+        width: 100%;
+    }
+}

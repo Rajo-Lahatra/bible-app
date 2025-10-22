@@ -10,10 +10,11 @@ class BibleApp {
     constructor() {
         this.currentBook = '';
         this.currentChapter = '';
-        this.activeTool = null;
+        this.activeTool = 'pointer'; // 'pointer', 'pencil-blue', 'pencil-red', 'pencil-green', 'comment'
         this.selectedVerse = null;
         this.supabase = null;
-        this.displayMode = 'both'; // Mode par défaut
+        this.displayMode = 'both';
+        this.linkedVerses = []; // Pour stocker les versets liés
         
         this.init();
     }
@@ -27,9 +28,6 @@ class BibleApp {
         
         // Initialiser les événements
         this.initializeEvents();
-        
-        // Initialiser le mode d'affichage
-        this.initializeDisplayMode();
         
         // Charger les données utilisateur si connecté
         if (this.supabase) {
@@ -47,10 +45,19 @@ class BibleApp {
             this.onChapterSelect(e.target.value);
         });
 
-        // Outils
+        // Outils de crayon et commentaire
         document.querySelectorAll('.tool-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
-                this.setActiveTool(e.target.dataset.tool);
+                const tool = e.target.dataset.tool;
+                const color = e.target.dataset.color;
+                this.setActiveTool(tool, color);
+            });
+        });
+
+        // Mode d'affichage
+        document.querySelectorAll('.display-mode-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                setDisplayMode(e.target.dataset.mode);
             });
         });
 
@@ -60,10 +67,18 @@ class BibleApp {
         });
 
         // Modal de commentaire
-        document.querySelector('.close').addEventListener('click', () => {
-            this.closeCommentModal();
+        this.initializeCommentModal();
+    }
+
+    initializeCommentModal() {
+        // Fermeture des modals
+        document.querySelectorAll('.close').forEach(closeBtn => {
+            closeBtn.addEventListener('click', (e) => {
+                e.target.closest('.modal').style.display = 'none';
+            });
         });
 
+        // Sauvegarde du commentaire
         document.getElementById('save-comment').addEventListener('click', () => {
             this.saveComment();
         });
@@ -72,36 +87,274 @@ class BibleApp {
             this.closeCommentModal();
         });
 
-        // Mode d'affichage
-        this.initializeDisplayModeEvents();
+        // Ajout de liens versets
+        document.getElementById('add-verse-link').addEventListener('click', () => {
+            this.addVerseLink();
+        });
+
+        // Initialiser les sélecteurs de livres pour les liens
+        this.initializeLinkSelects();
+
+        // Fermer les modals en cliquant à l'extérieur
+        window.addEventListener('click', (e) => {
+            if (e.target.classList.contains('modal')) {
+                e.target.style.display = 'none';
+            }
+        });
     }
 
-    // Initialiser les événements pour les boutons de mode d'affichage
-    initializeDisplayModeEvents() {
-        const modeButtons = document.querySelectorAll('.display-mode-btn');
-        modeButtons.forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                this.setDisplayMode(e.target.dataset.mode);
+    initializeLinkSelects() {
+        // Remplir le sélecteur de livres pour les liens
+        const linkBookSelect = document.getElementById('link-book-select');
+        if (!linkBookSelect) return;
+
+        // Utiliser les livres de bible-data.js
+        import('./bible-data.js').then(({ books, bookNames }) => {
+            linkBookSelect.innerHTML = '<option value="">Choisir un livre</option>';
+            
+            books.forEach(book => {
+                const option = document.createElement('option');
+                option.value = book;
+                option.textContent = bookNames.french[book];
+                linkBookSelect.appendChild(option);
+            });
+
+            // Événement de changement de livre pour les liens
+            linkBookSelect.addEventListener('change', (e) => {
+                this.onLinkBookSelect(e.target.value);
             });
         });
     }
 
-    // Initialiser l'état initial du mode d'affichage
-    initializeDisplayMode() {
-        this.setDisplayMode(this.displayMode);
+    onLinkBookSelect(book) {
+        const linkChapterSelect = document.getElementById('link-chapter-select');
+        if (!linkChapterSelect || !book) return;
+
+        // Charger les chapitres disponibles pour ce livre
+        import('./bible-data.js').then(({ getChapters }) => {
+            const chapters = getChapters(book, 'french');
+            linkChapterSelect.innerHTML = '<option value="">Chapitre</option>';
+            
+            chapters.forEach(chapter => {
+                const option = document.createElement('option');
+                option.value = chapter;
+                option.textContent = `Chapitre ${chapter}`;
+                linkChapterSelect.appendChild(option);
+            });
+        });
     }
 
-    // Changer le mode d'affichage
-    setDisplayMode(mode) {
-        this.displayMode = mode;
-        
-        // Mettre à jour les boutons
-        document.querySelectorAll('.display-mode-btn').forEach(btn => {
-            btn.classList.toggle('active', btn.dataset.mode === mode);
+    setActiveTool(tool, color = null) {
+        // Désactiver tous les outils
+        document.querySelectorAll('.tool-btn').forEach(btn => {
+            btn.classList.remove('active');
         });
 
-        // Mettre à jour l'affichage via bible-data.js
-        setDisplayMode(mode);
+        // Activer le nouvel outil
+        const activeBtn = document.querySelector(`[data-tool="${tool}"]`);
+        if (activeBtn) {
+            activeBtn.classList.add('active');
+        }
+
+        this.activeTool = color ? `pencil-${color}` : tool;
+
+        if (tool.startsWith('pencil-')) {
+            this.enableHighlighting();
+        } else if (tool === 'pointer') {
+            this.disableHighlighting();
+        } else if (tool === 'comment') {
+            this.enableCommenting();
+        }
+    }
+
+    enableHighlighting() {
+        document.querySelectorAll('.verse').forEach(verse => {
+            verse.style.cursor = 'pointer';
+            verse.addEventListener('click', this.handleVerseClick.bind(this));
+        });
+    }
+
+    disableHighlighting() {
+        document.querySelectorAll('.verse').forEach(verse => {
+            verse.style.cursor = 'default';
+            verse.removeEventListener('click', this.handleVerseClick.bind(this));
+        });
+    }
+
+    enableCommenting() {
+        document.querySelectorAll('.verse').forEach(verse => {
+            verse.style.cursor = 'pointer';
+            verse.addEventListener('click', this.handleVerseClick.bind(this));
+        });
+    }
+
+    async handleVerseClick(e) {
+        const verseElement = e.target.closest('.verse');
+        if (!verseElement) return;
+
+        const verseId = verseElement.dataset.verseId;
+
+        if (this.activeTool.startsWith('pencil-')) {
+            await this.toggleHighlight(verseId, verseElement);
+        } else if (this.activeTool === 'comment') {
+            this.openCommentModal(verseId, verseElement);
+        }
+    }
+
+    async toggleHighlight(verseId, verseElement) {
+        const color = this.activeTool.split('-')[1]; // Extraire la couleur
+        
+        // Retirer toutes les classes de highlight existantes
+        verseElement.classList.remove('highlighted-blue', 'highlighted-red', 'highlighted-green');
+        
+        // Si le verset a déjà cette couleur, le désactiver
+        if (verseElement.classList.contains(`highlighted-${color}`)) {
+            verseElement.classList.remove(`highlighted-${color}`);
+        } else {
+            // Sinon, appliquer la nouvelle couleur
+            verseElement.classList.add(`highlighted-${color}`);
+        }
+
+        if (this.supabase) {
+            const isHighlighted = verseElement.classList.contains(`highlighted-${color}`);
+            await saveHighlight(this.supabase, verseId, isHighlighted ? color : null);
+        }
+    }
+
+    openCommentModal(verseId, verseElement) {
+        this.selectedVerse = verseId;
+        this.linkedVerses = [];
+        
+        // Afficher la référence du verset
+        const verseRef = this.getVerseReference(verseId);
+        document.getElementById('current-verse-ref').textContent = verseRef;
+        
+        // Vider la liste des versets liés
+        document.getElementById('linked-verses-list').innerHTML = '';
+        
+        // Réinitialiser les sélecteurs
+        document.getElementById('link-book-select').value = '';
+        document.getElementById('link-chapter-select').innerHTML = '<option value="">Chapitre</option>';
+        document.getElementById('link-verse-input').value = '';
+        
+        document.getElementById('comment-modal').style.display = 'block';
+    }
+
+    closeCommentModal() {
+        document.getElementById('comment-modal').style.display = 'none';
+        this.selectedVerse = null;
+        this.linkedVerses = [];
+    }
+
+    addVerseLink() {
+        const book = document.getElementById('link-book-select').value;
+        const chapter = document.getElementById('link-chapter-select').value;
+        const verse = document.getElementById('link-verse-input').value;
+
+        if (!book || !chapter || !verse) {
+            alert('Veuillez sélectionner un livre, un chapitre et un verset');
+            return;
+        }
+
+        const verseId = `${book}-${chapter}-${verse}`;
+        
+        // Vérifier si le verset existe
+        import('./bible-data.js').then(({ getVerses, bookNames }) => {
+            const verses = getVerses(book, parseInt(chapter), 'french');
+            const verseText = verses[parseInt(verse)];
+
+            if (!verseText) {
+                alert('Ce verset n\'existe pas');
+                return;
+            }
+
+            // Ajouter à la liste
+            this.linkedVerses.push({
+                verseId: verseId,
+                book: book,
+                chapter: chapter,
+                verse: verse,
+                text: verseText.substring(0, 100) + '...'
+            });
+
+            this.updateLinkedVersesList();
+            
+            // Réinitialiser les champs
+            document.getElementById('link-verse-input').value = '';
+        });
+    }
+
+    updateLinkedVersesList() {
+        const listContainer = document.getElementById('linked-verses-list');
+        listContainer.innerHTML = '';
+
+        this.linkedVerses.forEach((linkedVerse, index) => {
+            const verseItem = document.createElement('div');
+            verseItem.className = 'linked-verse-item';
+            
+            verseItem.innerHTML = `
+                <div class="linked-verse-text">
+                    <strong>${linkedVerse.book} ${linkedVerse.chapter}:${linkedVerse.verse}</strong>
+                    <br>
+                    <span>${linkedVerse.text}</span>
+                </div>
+                <button type="button" class="remove-verse-link" data-index="${index}">×</button>
+            `;
+
+            // Événement pour supprimer le lien
+            verseItem.querySelector('.remove-verse-link').addEventListener('click', (e) => {
+                const index = parseInt(e.target.dataset.index);
+                this.linkedVerses.splice(index, 1);
+                this.updateLinkedVersesList();
+            });
+
+            // Événement pour prévisualiser le verset
+            verseItem.querySelector('.linked-verse-text').addEventListener('click', () => {
+                this.previewLinkedVerse(linkedVerse.verseId);
+            });
+
+            listContainer.appendChild(verseItem);
+        });
+    }
+
+    previewLinkedVerse(verseId) {
+        const [book, chapter, verse] = verseId.split('-');
+        
+        import('./bible-data.js').then(({ getVerses, bookNames }) => {
+            const verses = getVerses(book, parseInt(chapter), 'french');
+            const verseText = verses[parseInt(verse)];
+
+            if (verseText) {
+                document.getElementById('preview-verse-title').textContent = 
+                    `${bookNames.french[book]} ${chapter}:${verse}`;
+                document.getElementById('preview-verse-content').textContent = verseText;
+                document.getElementById('verse-preview-modal').style.display = 'block';
+            }
+        });
+    }
+
+    getVerseReference(verseId) {
+        const [book, chapter, verse] = verseId.split('-');
+        return import('./bible-data.js').then(({ bookNames }) => {
+            return `${bookNames.french[book]} ${chapter}:${verse}`;
+        });
+    }
+
+    async saveComment() {
+        const commentText = document.getElementById('comment-text').value;
+
+        if (!commentText.trim()) {
+            alert('Veuillez saisir un commentaire');
+            return;
+        }
+
+        if (this.supabase && this.selectedVerse) {
+            const linkedVersesIds = this.linkedVerses.map(v => v.verseId).join(';');
+            
+            await saveComment(this.supabase, this.selectedVerse, commentText, linkedVersesIds);
+            this.closeCommentModal();
+            await this.loadUserData(); // Recharger les commentaires
+        }
     }
 
     async onBookSelect(bookId) {
@@ -117,89 +370,13 @@ class BibleApp {
 
     async loadChapters(bookId) {
         // Cette fonction est gérée par bible-data.js
-        // Nous n'avons pas besoin de la modifier
     }
 
     async loadVerses() {
         if (!this.currentBook || !this.currentChapter) return;
         
         // Utiliser la fonction de bible-data.js pour charger les versets
-        // Nous utilisons une approche différente puisque loadVerses est exportée
-        // et gère déjà l'affichage
         console.log(`Chargement des versets: ${this.currentBook} chapitre ${this.currentChapter}`);
-    }
-
-    setActiveTool(tool) {
-        this.activeTool = tool;
-        
-        // Mettre à jour l'interface pour l'outil actif
-        document.querySelectorAll('.tool-btn').forEach(btn => {
-            btn.classList.toggle('active', btn.dataset.tool === tool);
-        });
-
-        if (tool === 'highlight') {
-            this.enableHighlighting();
-        } else if (tool === 'comment') {
-            this.enableCommenting();
-        }
-    }
-
-    enableHighlighting() {
-        // Activer le surlignage des versets
-        document.querySelectorAll('.verse').forEach(verse => {
-            verse.style.cursor = 'pointer';
-            verse.addEventListener('click', this.handleVerseClick.bind(this));
-        });
-    }
-
-    enableCommenting() {
-        // Activer les commentaires sur les versets
-        document.querySelectorAll('.verse').forEach(verse => {
-            verse.style.cursor = 'pointer';
-            verse.addEventListener('click', this.handleVerseClick.bind(this));
-        });
-    }
-
-    async handleVerseClick(e) {
-        const verseElement = e.target.closest('.verse');
-        if (!verseElement) return;
-
-        const verseId = verseElement.dataset.verseId;
-
-        if (this.activeTool === 'highlight') {
-            await this.toggleHighlight(verseId, verseElement);
-        } else if (this.activeTool === 'comment') {
-            this.openCommentModal(verseId);
-        }
-    }
-
-    async toggleHighlight(verseId, verseElement) {
-        verseElement.classList.toggle('highlighted');
-        
-        if (this.supabase) {
-            await saveHighlight(this.supabase, verseId, verseElement.classList.contains('highlighted'));
-        }
-    }
-
-    openCommentModal(verseId) {
-        this.selectedVerse = verseId;
-        document.getElementById('comment-modal').style.display = 'block';
-    }
-
-    closeCommentModal() {
-        document.getElementById('comment-modal').style.display = 'none';
-        this.selectedVerse = null;
-    }
-
-    async saveComment() {
-        const commentText = document.getElementById('comment-text').value;
-        const verseLink = document.getElementById('verse-link').value;
-
-        if (this.supabase && this.selectedVerse) {
-            await saveComment(this.supabase, this.selectedVerse, commentText, verseLink);
-            this.closeCommentModal();
-            await this.loadUserData(); // Recharger les commentaires
-        }
     }
 
     async loadUserData() {
@@ -210,16 +387,17 @@ class BibleApp {
     }
 
     displayUserData(userData) {
-        // Afficher les surlignages et commentaires
+        // Afficher les surlignages
         if (userData.highlights) {
             userData.highlights.forEach(highlight => {
                 const verseElement = document.querySelector(`[data-verse-id="${highlight.verse_id}"]`);
-                if (verseElement) {
-                    verseElement.classList.add('highlighted');
+                if (verseElement && highlight.color) {
+                    verseElement.classList.add(`highlighted-${highlight.color}`);
                 }
             });
         }
 
+        // Afficher les commentaires
         if (userData.comments) {
             userData.comments.forEach(comment => {
                 this.displayComment(comment);
@@ -236,11 +414,29 @@ class BibleApp {
                 commentDiv.className = 'verse-comment';
                 verseElement.appendChild(commentDiv);
             }
-            commentDiv.textContent = comment.content;
             
+            // Afficher le commentaire avec les liens versets
+            let commentHTML = comment.content;
+            
+            // Traiter les versets liés
             if (comment.linked_verse) {
-                // Ajouter le lien vers l'autre verset
+                const linkedVerses = comment.linked_verse.split(';');
+                linkedVerses.forEach(verseId => {
+                    if (verseId) {
+                        commentHTML += `<br><small class="verse-link" data-verse-id="${verseId}">🔗 Voir ${verseId}</small>`;
+                    }
+                });
             }
+            
+            commentDiv.innerHTML = commentHTML;
+            
+            // Ajouter les événements pour les liens
+            commentDiv.querySelectorAll('.verse-link').forEach(link => {
+                link.addEventListener('click', (e) => {
+                    const verseId = e.target.dataset.verseId;
+                    this.previewLinkedVerse(verseId);
+                });
+            });
         }
     }
 

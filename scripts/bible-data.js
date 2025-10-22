@@ -313,7 +313,7 @@ function parseFrenchBibleText(text) {
         }
 
         // Détection des versets (format: "X ¶ Texte" ou "X Texte")
-        const verseMatch = line.match(/^(\d+)\s*(¶)?\s*(.*)$/);
+        const verseMatch = line.match(/^(\d+)\s*(¶\s*)?(.*)$/);
         if (verseMatch && currentBook && currentChapter !== null) {
             // Sauvegarder le verset précédent si on en a un
             if (currentVerse !== null && currentText) {
@@ -323,16 +323,29 @@ function parseFrenchBibleText(text) {
             
             currentVerse = parseInt(verseMatch[1]);
             currentText = verseMatch[3].trim();
-            continue;
-        }
-
-        // Si on est dans un verset et que la ligne ne commence pas par un numéro, on l'ajoute au texte du verset en cours
-        if (currentBook && currentChapter !== null && currentVerse !== null && line) {
+        } else if (currentBook && currentChapter !== null && currentVerse !== null && line) {
+            // Accumuler les lignes suivantes pour le même verset
             // Ignorer les lignes de séparation
             if (line.match(/^[-=*_]+$/)) continue;
             
-            if (currentText) currentText += ' ';
-            currentText += line;
+            // Vérifier si la ligne suivante commence par un chiffre (nouveau verset non détecté)
+            if (line.match(/^\d/)) {
+                // C'est probablement un nouveau verset mal formaté, sauvegarder le courant
+                if (currentText) {
+                    saveVerse(books, currentBook, currentChapter, currentVerse, currentText);
+                    currentText = '';
+                }
+                // Essayer de détecter le verset manquant
+                const altVerseMatch = line.match(/^(\d+)\s*(.*)$/);
+                if (altVerseMatch) {
+                    currentVerse = parseInt(altVerseMatch[1]);
+                    currentText = altVerseMatch[2].trim();
+                }
+            } else {
+                // Continuer à accumuler le texte du verset courant
+                if (currentText) currentText += ' ';
+                currentText += line;
+            }
         }
     }
 

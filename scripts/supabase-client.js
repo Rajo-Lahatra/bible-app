@@ -12,16 +12,17 @@ export async function initSupabase() {
     return createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 }
 
-export async function saveHighlight(supabase, verseId, isHighlighted) {
+export async function saveHighlight(supabase, verseId, color) {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
-    if (isHighlighted) {
+    if (color) {
         await supabase
             .from('highlights')
             .upsert({
                 user_id: user.id,
                 verse_id: verseId,
+                color: color,
                 created_at: new Date().toISOString()
             });
     } else {
