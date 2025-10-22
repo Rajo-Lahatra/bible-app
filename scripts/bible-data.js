@@ -53,45 +53,45 @@ export const bookNames = {
 // Avec variantes de noms pour gérer différentes casse et accents
 export const frenchToMalagasyMapping = {
     // Ancien Testament - différentes variantes de noms
-    "GENESE": "Genesisy", "GENÈSE": "Genesisy",
-    "EXODE": "Eksodosy", 
-    "LEVITIQUE": "Levitikosy", 
-    "NOMBRES": "Nomery",
-    "DEUTERONOME": "Deotoronomia", 
-    "JOSUE": "Josoa", "JOSUÉ": "Josoa",
-    "JUGES": "Mpitsara", 
-    "RUTH": "Rota",
-    "1 SAMUEL": "I Samoela", "1ER SAMUEL": "I Samoela", "PREMIER SAMUEL": "I Samoela",
-    "2 SAMUEL": "II Samoela", "2EME SAMUEL": "II Samoela", "DEUXIEME SAMUEL": "II Samoela",
-    "1 ROIS": "I Mpanjaka", "1ER ROIS": "I Mpanjaka", "PREMIER ROIS": "I Mpanjaka",
-    "2 ROIS": "II Mpanjaka", "2EME ROIS": "II Mpanjaka", "DEUXIEME ROIS": "II Mpanjaka",
-    "1 CHRONIQUES": "I Tantara", "1ER CHRONIQUES": "I Tantara", "PREMIER CHRONIQUES": "I Tantara",
-    "2 CHRONIQUES": "II Tantara", "2EME CHRONIQUES": "II Tantara", "DEUXIEME CHRONIQUES": "II Tantara",
-    "ESDRAS": "Ezra", 
-    "NEHEMIE": "Nehemia", "NÉHÉMIE": "Nehemia",
-    "ESTHER": "Estera", 
-    "JOB": "Joba", 
-    "PSAUMES": "Salamo", 
-    "PROVERBES": "Ohabolana", 
-    "ECCLESIASTE": "Mpitoriteny", "ECCLÉSIASTE": "Mpitoriteny",
-    "CANTIQUE DES CANTIQUES": "Tonon-kiran'i Solomona", 
-    "ESAIE": "Isaia", "ÉSAÏE": "Isaia",
-    "JEREMIE": "Jeremia", "JÉRÉMIE": "Jeremia", 
-    "LAMENTATIONS": "Fitomaniana", 
-    "EZECHIEL": "Ezekiela", "ÉZÉCHIEL": "Ezekiela",
-    "DANIEL": "Daniela", 
-    "OSEE": "Hosea", "OSÉE": "Hosea", 
-    "JOEL": "Joela", "JOËL": "Joela", 
-    "AMOS": "Amosa", 
-    "ABDIAS": "Obadia", 
-    "JONAS": "Jona", 
-    "MICHEE": "Mika", "MICHEÉ": "Mika", 
-    "NAHUM": "Nahoma", 
-    "HABACUC": "Habakoka", "HABAKUK": "Habakoka",
-    "SOPHONIE": "Zefania", 
-    "AGGEE": "Hagay", "AGGÉE": "Hagay",
-    "ZACHARIE": "Zakaria", 
-    "MALACHIE": "Malakia", "MALACHI": "Malakia"
+    "GENESE": "Genesisy", "GENÈSE": "Genesisy", "GENESE": "Genesisy", "Genèse": "Genesisy",
+    "EXODE": "Eksodosy", "Exode": "Eksodosy",
+    "LEVITIQUE": "Levitikosy", "Lévitique": "Levitikosy",
+    "NOMBRES": "Nomery", "Nombres": "Nomery",
+    "DEUTERONOME": "Deotoronomia", "Deutéronome": "Deotoronomia",
+    "JOSUE": "Josoa", "JOSUÉ": "Josoa", "Josué": "Josoa",
+    "JUGES": "Mpitsara", "Juges": "Mpitsara",
+    "RUTH": "Rota", "Ruth": "Rota",
+    "1 SAMUEL": "I Samoela", "1ER SAMUEL": "I Samoela", "PREMIER SAMUEL": "I Samoela", "1 Samuel": "I Samoela",
+    "2 SAMUEL": "II Samoela", "2EME SAMUEL": "II Samoela", "DEUXIEME SAMUEL": "II Samoela", "2 Samuel": "II Samoela",
+    "1 ROIS": "I Mpanjaka", "1ER ROIS": "I Mpanjaka", "PREMIER ROIS": "I Mpanjaka", "1 Rois": "I Mpanjaka",
+    "2 ROIS": "II Mpanjaka", "2EME ROIS": "II Mpanjaka", "DEUXIEME ROIS": "II Mpanjaka", "2 Rois": "II Mpanjaka",
+    "1 CHRONIQUES": "I Tantara", "1ER CHRONIQUES": "I Tantara", "PREMIER CHRONIQUES": "I Tantara", "1 Chroniques": "I Tantara",
+    "2 CHRONIQUES": "II Tantara", "2EME CHRONIQUES": "II Tantara", "DEUXIEME CHRONIQUES": "II Tantara", "2 Chroniques": "II Tantara",
+    "ESDRAS": "Ezra", "Esdras": "Ezra",
+    "NEHEMIE": "Nehemia", "NÉHÉMIE": "Nehemia", "Néhémie": "Nehemia",
+    "ESTHER": "Estera", "Esther": "Estera",
+    "JOB": "Joba", "Job": "Joba",
+    "PSAUMES": "Salamo", "Psaumes": "Salamo",
+    "PROVERBES": "Ohabolana", "Proverbes": "Ohabolana",
+    "ECCLESIASTE": "Mpitoriteny", "ECCLÉSIASTE": "Mpitoriteny", "Ecclésiaste": "Mpitoriteny",
+    "CANTIQUE DES CANTIQUES": "Tonon-kiran'i Solomona", "Cantique des Cantiques": "Tonon-kiran'i Solomona",
+    "ESAIE": "Isaia", "ÉSAÏE": "Isaia", "Ésaïe": "Isaia",
+    "JEREMIE": "Jeremia", "JÉRÉMIE": "Jeremia", "Jérémie": "Jeremia",
+    "LAMENTATIONS": "Fitomaniana", "Lamentations": "Fitomaniana",
+    "EZECHIEL": "Ezekiela", "ÉZÉCHIEL": "Ezekiela", "Ézéchiel": "Ezekiela",
+    "DANIEL": "Daniela", "Daniel": "Daniela",
+    "OSEE": "Hosea", "OSÉE": "Hosea", "Osée": "Hosea",
+    "JOEL": "Joela", "JOËL": "Joela", "Joël": "Joela",
+    "AMOS": "Amosa", "Amos": "Amosa",
+    "ABDIAS": "Obadia", "Abdias": "Obadia",
+    "JONAS": "Jona", "Jonas": "Jona",
+    "MICHEE": "Mika", "MICHEÉ": "Mika", "Michée": "Mika",
+    "NAHUM": "Nahoma", "Nahum": "Nahoma",
+    "HABACUC": "Habakoka", "HABAKUK": "Habakoka", "Habacuc": "Habakoka",
+    "SOPHONIE": "Zefania", "Sophonie": "Zefania",
+    "AGGEE": "Hagay", "AGGÉE": "Hagay", "Aggée": "Hagay",
+    "ZACHARIE": "Zakaria", "Zacharie": "Zakaria",
+    "MALACHIE": "Malakia", "MALACHI": "Malakia", "Malachie": "Malakia"
 };
 
 // Mapping des codes fichiers pour le Nouveau Testament seulement
@@ -244,6 +244,13 @@ async function loadOldTestamentFromPDFFile() {
         const pdfText = await response.text();
         console.log(`Fichier PDF chargé, taille: ${pdfText.length} caractères`);
         
+        // Afficher les premières lignes pour debug
+        const lines = pdfText.split('\n').slice(0, 10);
+        console.log('10 premières lignes du PDF:');
+        lines.forEach((line, index) => {
+            console.log(`Ligne ${index}: "${line}"`);
+        });
+        
         const parsedData = parsePDFText(pdfText);
         console.log('Données parsées:', Object.keys(parsedData));
         
@@ -308,88 +315,71 @@ async function loadNewTestamentFromIndividualFile(malagasyBook, chapter) {
     return generateMockFrenchChapter(malagasyBook, chapter);
 }
 
-// Parser pour le texte extrait du PDF - VERSION AMÉLIORÉE INSENSIBLE À LA CASSE
+// Parser pour le texte extrait du PDF - VERSION CORRIGÉE
 function parsePDFText(pdfText) {
     const books = {};
     const lines = pdfText.split('\n');
     
-    // Créer un mapping des noms de livres normalisés
-    const frenchBookNamesNormalized = {};
+    // Créer un mapping des noms de livres normalisés (insensibles à la casse et accents)
+    const normalizedFrenchToMalagasy = {};
     Object.keys(frenchToMalagasyMapping).forEach(frenchName => {
         const normalized = normalizeBookName(frenchName);
-        frenchBookNamesNormalized[normalized] = frenchToMalagasyMapping[frenchName];
+        normalizedFrenchToMalagasy[normalized] = frenchName; // Garder le nom français original
     });
     
-    let currentBook = null;
+    let currentBook = null; // Stocke le nom français du livre
     let currentChapter = 0;
     let currentVerse = 0;
     let verseText = '';
-    let lineCount = 0;
     
     console.log(`Parsing PDF texte, ${lines.length} lignes`);
 
     lines.forEach((line, index) => {
-        lineCount++;
         line = line.trim();
         if (!line) return;
         
-        // Détecter un nouveau livre
-        const isPotentialBook = line.length > 3 && 
-                               !line.match(/^\d+\.\d+$/) &&
-                               !line.match(/^[A-ZÉÈÊÀÂÇÔÎÏËÜÆŒ0-9\s]+\s+\d+$/i) &&
-                               !line.includes('...') &&
-                               !line.includes('SOMMAIRES') &&
-                               !line.includes('TABLE DES MATIERES') &&
-                               !line.match(/^\d+$/) &&
-                               !line.match(/^[ivxlcdm]+$/i);
+        // Détecter un nouveau livre (ligne qui correspond à un nom de livre français)
+        const normalizedLine = normalizeBookName(line);
+        let matchedBook = normalizedFrenchToMalagasy[normalizedLine];
         
-        if (isPotentialBook) {
-            // Normaliser le nom et chercher une correspondance
-            const normalizedLine = normalizeBookName(line);
-            let matchedBook = null;
-            
-            // Chercher une correspondance exacte d'abord
-            if (frenchBookNamesNormalized[normalizedLine]) {
-                matchedBook = frenchBookNamesNormalized[normalizedLine];
-            } else {
-                // Chercher une correspondance partielle
-                for (const [frenchName, malagasyName] of Object.entries(frenchBookNamesNormalized)) {
-                    if (normalizedLine.includes(frenchName) || frenchName.includes(normalizedLine)) {
-                        matchedBook = malagasyName;
-                        break;
-                    }
+        // Si pas de correspondance exacte, chercher une correspondance partielle
+        if (!matchedBook) {
+            for (const [frenchNameNormalized, frenchNameOriginal] of Object.entries(normalizedFrenchToMalagasy)) {
+                if (normalizedLine.includes(frenchNameNormalized) || frenchNameNormalized.includes(normalizedLine)) {
+                    matchedBook = frenchNameOriginal;
+                    break;
                 }
-            }
-            
-            if (matchedBook) {
-                // Sauvegarder le dernier verset du livre précédent
-                if (currentBook && currentChapter > 0 && currentVerse > 0 && verseText) {
-                    if (!books[currentBook][currentChapter]) {
-                        books[currentBook][currentChapter] = {};
-                    }
-                    books[currentBook][currentChapter][currentVerse] = verseText.trim();
-                    verseText = '';
-                }
-                
-                currentBook = matchedBook;
-                currentChapter = 0;
-                currentVerse = 0;
-                if (!books[currentBook]) {
-                    books[currentBook] = {};
-                }
-                console.log(`📖 Nouveau livre détecté: "${line}" -> "${currentBook}" à la ligne ${index}`);
-                return;
             }
         }
         
-        // Détecter un nouveau chapitre
+        if (matchedBook) {
+            // Sauvegarder le dernier verset du livre précédent
+            if (currentBook && currentChapter > 0 && currentVerse > 0 && verseText) {
+                if (!books[currentBook][currentChapter]) {
+                    books[currentBook][currentChapter] = {};
+                }
+                books[currentBook][currentChapter][currentVerse] = verseText.trim();
+                verseText = '';
+            }
+            
+            currentBook = matchedBook; // Ici currentBook est le nom français
+            currentChapter = 0;
+            currentVerse = 0;
+            if (!books[currentBook]) {
+                books[currentBook] = {};
+            }
+            console.log(`📖 Nouveau livre détecté: "${line}" -> "${currentBook}" à la ligne ${index}`);
+            return;
+        }
+        
+        // Détecter un nouveau chapitre (format: "GENESE 1", "Exode 1", etc.)
         const chapterMatch = line.match(/^([A-ZÉÈÊÀÂÇÔÎÏËÜÆŒ0-9\s]+)\s+(\d+)$/i);
         if (chapterMatch && currentBook) {
             const chapterName = chapterMatch[1].trim();
             const normalizedChapterName = normalizeBookName(chapterName);
             
             // Vérifier que le nom du chapitre correspond au livre courant
-            const chapterBookMatch = frenchBookNamesNormalized[normalizedChapterName];
+            const chapterBookMatch = normalizedFrenchToMalagasy[normalizedChapterName];
             if (chapterBookMatch === currentBook) {
                 // Sauvegarder le dernier verset du chapitre précédent
                 if (currentChapter > 0 && currentVerse > 0 && verseText) {
@@ -407,9 +397,10 @@ function parsePDFText(pdfText) {
             }
         }
         
-        // Détecter un numéro de verset
+        // Détecter un numéro de verset (format: "1.1", "1.2", etc.)
         const verseMatch = line.match(/^(\d+)\.(\d+)$/);
         if (verseMatch && currentBook && currentChapter > 0) {
+            // Sauvegarder le verset précédent s'il y en a un
             if (currentVerse > 0 && verseText) {
                 books[currentBook][currentChapter][currentVerse] = verseText.trim();
                 verseText = '';
@@ -419,10 +410,11 @@ function parsePDFText(pdfText) {
             return;
         }
         
-        // Ajouter le texte au verset en cours
+        // Si on a un livre, un chapitre et un verset en cours, ajouter le texte
         if (currentBook && currentChapter > 0 && currentVerse > 0 && line) {
-            if (line.match(/^\d+$/)) return;
-            if (line.match(/^[ivxlcdm]+$/i)) return;
+            // Ignorer les lignes qui sont probablement des en-têtes ou numéros de page
+            if (line.match(/^\d+$/)) return; // Numéro de page seul
+            if (line.match(/^[ivxlcdm]+$/i)) return; // Chiffres romains
             
             if (verseText) verseText += ' ';
             verseText += line;
