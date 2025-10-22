@@ -1,4 +1,4 @@
-import { initializeApp } from './bible-data.js';
+import { initializeApp, setDisplayMode, getDisplayMode } from './bible-data.js';
 import { 
     saveHighlight, 
     saveComment, 
@@ -13,6 +13,7 @@ class BibleApp {
         this.activeTool = null;
         this.selectedVerse = null;
         this.supabase = null;
+        this.displayMode = 'both'; // Mode par défaut
         
         this.init();
     }
@@ -26,6 +27,9 @@ class BibleApp {
         
         // Initialiser les événements
         this.initializeEvents();
+        
+        // Initialiser le mode d'affichage
+        this.initializeDisplayMode();
         
         // Charger les données utilisateur si connecté
         if (this.supabase) {
@@ -67,6 +71,37 @@ class BibleApp {
         document.getElementById('cancel-comment').addEventListener('click', () => {
             this.closeCommentModal();
         });
+
+        // Mode d'affichage
+        this.initializeDisplayModeEvents();
+    }
+
+    // Initialiser les événements pour les boutons de mode d'affichage
+    initializeDisplayModeEvents() {
+        const modeButtons = document.querySelectorAll('.display-mode-btn');
+        modeButtons.forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                this.setDisplayMode(e.target.dataset.mode);
+            });
+        });
+    }
+
+    // Initialiser l'état initial du mode d'affichage
+    initializeDisplayMode() {
+        this.setDisplayMode(this.displayMode);
+    }
+
+    // Changer le mode d'affichage
+    setDisplayMode(mode) {
+        this.displayMode = mode;
+        
+        // Mettre à jour les boutons
+        document.querySelectorAll('.display-mode-btn').forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.mode === mode);
+        });
+
+        // Mettre à jour l'affichage via bible-data.js
+        setDisplayMode(mode);
     }
 
     async onBookSelect(bookId) {
@@ -81,14 +116,17 @@ class BibleApp {
     }
 
     async loadChapters(bookId) {
-        // Implémentation à compléter selon votre structure de données
+        // Cette fonction est gérée par bible-data.js
+        // Nous n'avons pas besoin de la modifier
     }
 
     async loadVerses() {
         if (!this.currentBook || !this.currentChapter) return;
         
-        // Charger les versets malgaches et français
-        // Cette partie dépendra de votre structure de données
+        // Utiliser la fonction de bible-data.js pour charger les versets
+        // Nous utilisons une approche différente puisque loadVerses est exportée
+        // et gère déjà l'affichage
+        console.log(`Chargement des versets: ${this.currentBook} chapitre ${this.currentChapter}`);
     }
 
     setActiveTool(tool) {
@@ -96,17 +134,26 @@ class BibleApp {
         
         // Mettre à jour l'interface pour l'outil actif
         document.querySelectorAll('.tool-btn').forEach(btn => {
-            btn.style.backgroundColor = btn.dataset.tool === tool ? 
-                'var(--secondary-color)' : '';
+            btn.classList.toggle('active', btn.dataset.tool === tool);
         });
 
         if (tool === 'highlight') {
             this.enableHighlighting();
+        } else if (tool === 'comment') {
+            this.enableCommenting();
         }
     }
 
     enableHighlighting() {
         // Activer le surlignage des versets
+        document.querySelectorAll('.verse').forEach(verse => {
+            verse.style.cursor = 'pointer';
+            verse.addEventListener('click', this.handleVerseClick.bind(this));
+        });
+    }
+
+    enableCommenting() {
+        // Activer les commentaires sur les versets
         document.querySelectorAll('.verse').forEach(verse => {
             verse.style.cursor = 'pointer';
             verse.addEventListener('click', this.handleVerseClick.bind(this));
@@ -164,16 +211,20 @@ class BibleApp {
 
     displayUserData(userData) {
         // Afficher les surlignages et commentaires
-        userData.highlights.forEach(highlight => {
-            const verseElement = document.querySelector(`[data-verse-id="${highlight.verse_id}"]`);
-            if (verseElement) {
-                verseElement.classList.add('highlighted');
-            }
-        });
+        if (userData.highlights) {
+            userData.highlights.forEach(highlight => {
+                const verseElement = document.querySelector(`[data-verse-id="${highlight.verse_id}"]`);
+                if (verseElement) {
+                    verseElement.classList.add('highlighted');
+                }
+            });
+        }
 
-        userData.comments.forEach(comment => {
-            this.displayComment(comment);
-        });
+        if (userData.comments) {
+            userData.comments.forEach(comment => {
+                this.displayComment(comment);
+            });
+        }
     }
 
     displayComment(comment) {

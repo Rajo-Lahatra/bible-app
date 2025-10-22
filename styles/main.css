@@ -1,16 +1,25 @@
 :root {
     --primary-color: #2c3e50;
     --secondary-color: #3498db;
-    --background-color: #ffffff;
-    --text-color: #333333;
-    --border-color: #ddd;
-    --highlight-color: #fff9c4;
+    --accent-color: #e74c3c;
+    --bg-color: #ffffff;
+    --card-bg: #f8f9fa;
+    --text-color: #2c3e50;
+    --border-color: #dee2e6;
+    --hover-color: #e9ecef;
+    --shadow: 0 2px 10px rgba(0,0,0,0.1);
 }
 
 [data-theme="dark"] {
-    --background-color: #1a1a1a;
-    --text-color: #ffffff;
-    --border-color: #444;
+    --primary-color: #ecf0f1;
+    --secondary-color: #3498db;
+    --accent-color: #e74c3c;
+    --bg-color: #1a1a1a;
+    --card-bg: #2d2d2d;
+    --text-color: #ecf0f1;
+    --border-color: #404040;
+    --hover-color: #3d3d3d;
+    --shadow: 0 2px 10px rgba(0,0,0,0.3);
 }
 
 * {
@@ -21,15 +30,16 @@
 
 body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background-color: var(--background-color);
+    background-color: var(--bg-color);
     color: var(--text-color);
-    transition: all 0.3s ease;
+    line-height: 1.6;
+    transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 .app-header {
-    background-color: var(--primary-color);
-    color: white;
+    background-color: var(--card-bg);
     padding: 1rem;
+    box-shadow: var(--shadow);
     position: sticky;
     top: 0;
     z-index: 100;
@@ -37,45 +47,138 @@ body {
 
 .header-controls {
     display: flex;
-    gap: 1rem;
     align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
     max-width: 1200px;
     margin: 0 auto;
 }
 
-select, button {
+select {
     padding: 0.5rem 1rem;
-    border: none;
-    border-radius: 4px;
-    background-color: white;
-    color: var(--primary-color);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    font-size: 1rem;
+    min-width: 150px;
+}
+
+button {
+    padding: 0.5rem 1rem;
+    border: 1px solid var(--border-color);
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    border-radius: 6px;
     cursor: pointer;
+    font-size: 1rem;
+    transition: all 0.2s ease;
+}
+
+button:hover {
+    background-color: var(--hover-color);
+    border-color: var(--secondary-color);
+}
+
+/* Conteneur pour les boutons de mode d'affichage */
+.display-mode-container {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 0 0.5rem;
+    padding: 0.5rem;
+    background: var(--card-bg);
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+}
+
+.mode-label {
+    font-size: 0.9rem;
+    color: var(--text-color);
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+.display-mode-btn {
+    padding: 0.4rem 0.8rem;
+    border: 1px solid var(--border-color);
+    background: var(--bg-color);
+    color: var(--text-color);
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+}
+
+.display-mode-btn:hover {
+    background: var(--hover-color);
+    border-color: var(--secondary-color);
+}
+
+.display-mode-btn.active {
+    background: var(--secondary-color);
+    color: white;
+    border-color: var(--secondary-color);
 }
 
 .bible-container {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 0;
-    max-width: 1200px;
+    display: flex;
+    max-width: 1400px;
     margin: 0 auto;
+    padding: 1rem;
+    gap: 1rem;
     height: calc(100vh - 80px);
+    transition: all 0.3s ease;
 }
 
-.bible-column {
-    border-right: 1px solid var(--border-color);
-    display: flex;
+/* Styles pour les différents modes d'affichage */
+.bible-container.single-column {
     flex-direction: column;
 }
 
+.bible-container.single-column .bible-column {
+    width: 100% !important;
+    display: none;
+}
+
+.bible-container.single-column .bible-column.active {
+    display: flex !important;
+}
+
+.bible-column {
+    display: flex;
+    flex-direction: column;
+    background-color: var(--card-bg);
+    border-radius: 8px;
+    box-shadow: var(--shadow);
+    overflow: hidden;
+    transition: all 0.3s ease;
+    flex: 1;
+}
+
+.bible-column.hidden {
+    display: none !important;
+}
+
+.bible-column.full-width {
+    flex: 1;
+    width: 100%;
+}
+
 .column-header {
-    padding: 1rem;
-    background-color: var(--background-color);
-    border-bottom: 1px solid var(--border-color);
     display: flex;
     justify-content: space-between;
     align-items: center;
-    position: sticky;
-    top: 60px;
+    padding: 1rem;
+    background-color: var(--primary-color);
+    color: white;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.column-header h3 {
+    font-size: 1.2rem;
+    font-weight: 600;
 }
 
 .tools {
@@ -84,48 +187,72 @@ select, button {
 }
 
 .tool-btn {
-    background: none;
-    border: 1px solid var(--border-color);
-    padding: 0.25rem 0.5rem;
-    font-size: 1.2rem;
+    padding: 0.4rem 0.8rem;
+    background: transparent;
+    border: 1px solid rgba(255,255,255,0.3);
+    color: white;
+    font-size: 0.9rem;
+}
+
+.tool-btn:hover {
+    background: rgba(255,255,255,0.1);
+    border-color: rgba(255,255,255,0.5);
+}
+
+.tool-btn.active {
+    background: var(--secondary-color);
+    border-color: var(--secondary-color);
 }
 
 .verses-container {
     flex: 1;
     overflow-y: auto;
     padding: 1rem;
+    height: 100%;
 }
 
 .verse {
     margin-bottom: 1rem;
-    padding: 0.5rem;
-    border-radius: 4px;
-    transition: background-color 0.2s;
-    position: relative;
+    padding: 0.75rem;
+    background-color: var(--bg-color);
+    border-radius: 6px;
+    border-left: 3px solid transparent;
+    transition: all 0.2s ease;
 }
 
 .verse:hover {
-    background-color: color-mix(in srgb, var(--secondary-color) 10%, transparent);
-}
-
-.verse-number {
-    font-size: 0.8em;
-    color: var(--secondary-color);
-    font-weight: bold;
-    margin-right: 0.5rem;
+    background-color: var(--hover-color);
+    border-left-color: var(--secondary-color);
 }
 
 .verse.highlighted {
-    background-color: var(--highlight-color);
+    background-color: #fff3cd;
+    border-left-color: #ffc107;
 }
 
-.verse-comment {
-    font-size: 0.8em;
-    color: #666;
-    margin-top: 0.5rem;
-    padding: 0.5rem;
-    background-color: color-mix(in srgb, var(--secondary-color) 5%, transparent);
-    border-left: 3px solid var(--secondary-color);
+[data-theme="dark"] .verse.highlighted {
+    background-color: #332701;
+    border-left-color: #ffc107;
+}
+
+.verse-number {
+    font-weight: bold;
+    color: var(--secondary-color);
+    margin-right: 0.5rem;
+    font-size: 0.9rem;
+}
+
+.verse-text {
+    line-height: 1.6;
+}
+
+.chapter-title {
+    text-align: center;
+    margin-bottom: 1.5rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid var(--secondary-color);
+    color: var(--secondary-color);
+    font-size: 1.3rem;
 }
 
 /* Modal */
@@ -141,18 +268,19 @@ select, button {
 }
 
 .modal-content {
-    background-color: var(--background-color);
-    margin: 15% auto;
+    background-color: var(--bg-color);
+    margin: 10% auto;
     padding: 2rem;
     border-radius: 8px;
     width: 90%;
     max-width: 500px;
+    box-shadow: var(--shadow);
 }
 
 .close {
     color: #aaa;
     float: right;
-    font-size: 28px;
+    font-size: 1.5rem;
     font-weight: bold;
     cursor: pointer;
 }
@@ -161,108 +289,76 @@ select, button {
     color: var(--text-color);
 }
 
-#comment-text, #verse-link {
-    width: 100%;
-    margin: 1rem 0;
-    padding: 0.5rem;
-    border: 1px solid var(--border-color);
-    border-radius: 4px;
-    background-color: var(--background-color);
+.modal h3 {
+    margin-bottom: 1rem;
     color: var(--text-color);
+}
+
+textarea, input[type="text"] {
+    width: 100%;
+    padding: 0.75rem;
+    margin-bottom: 1rem;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    font-family: inherit;
 }
 
 .modal-actions {
     display: flex;
-    gap: 1rem;
+    gap: 0.5rem;
     justify-content: flex-end;
-}
-
-@media (max-width: 768px) {
-    .bible-container {
-        grid-template-columns: 1fr;
-    }
-    
-    .bible-column {
-        border-right: none;
-        border-bottom: 1px solid var(--border-color);
-    }
-}
-/* Style pour les groupes d'options */
-optgroup {
-    font-weight: bold;
-}
-
-optgroup option {
-    font-weight: normal;
-    padding-left: 10px;
-}
-
-/* Amélioration de l'affichage des livres */
-.chapter-title {
-    text-align: center;
-    margin-bottom: 1.5rem;
-    padding-bottom: 0.5rem;
-    border-bottom: 2px solid var(--secondary-color);
-    color: var(--secondary-color);
-    font-size: 1.1em;
-}
-
-.verse-text {
-    line-height: 1.6;
-    text-align: justify;
-}
-
-.no-verses {
-    text-align: center;
-    color: #666;
-    font-style: italic;
-    padding: 2rem;
-}
-
-/* Amélioration de l'affichage des versets */
-.verse {
-    margin-bottom: 1rem;
-    padding: 0.75rem;
-    border-radius: 6px;
-    transition: all 0.2s ease;
-    line-height: 1.6;
-    border-left: 3px solid transparent;
-}
-
-.verse:hover {
-    background-color: color-mix(in srgb, var(--secondary-color) 8%, transparent);
-    border-left-color: var(--secondary-color);
-    transform: translateX(2px);
-}
-
-.verse-number {
-    font-size: 0.75em;
-    color: var(--secondary-color);
-    font-weight: bold;
-    margin-right: 0.5rem;
-    background-color: color-mix(in srgb, var(--secondary-color) 15%, transparent);
-    padding: 0.2rem 0.4rem;
-    border-radius: 3px;
-    min-width: 1.8em;
-    display: inline-block;
-    text-align: center;
-}
-
-/* Style pour les versions */
-.bible-column h3 {
-    color: var(--primary-color);
-    margin: 0;
-    font-size: 1.2em;
 }
 
 /* Responsive */
 @media (max-width: 768px) {
-    .chapter-title {
-        font-size: 1em;
+    .header-controls {
+        flex-direction: column;
+        align-items: stretch;
     }
     
-    .verse {
+    .display-mode-container {
+        justify-content: center;
+        order: 3;
+        margin-top: 0.5rem;
+    }
+    
+    .bible-container {
+        flex-direction: column;
+        height: auto;
         padding: 0.5rem;
-        margin-bottom: 0.75rem;
+    }
+    
+    .bible-column {
+        margin-bottom: 1rem;
+    }
+    
+    .display-mode-btn {
+        flex: 1;
+        min-width: 0;
+        font-size: 0.8rem;
+        padding: 0.4rem 0.5rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .header-controls {
+        gap: 0.5rem;
+    }
+    
+    select, button {
+        font-size: 0.9rem;
+        padding: 0.4rem 0.8rem;
+    }
+    
+    .display-mode-container {
+        flex-wrap: wrap;
+    }
+    
+    .mode-label {
+        width: 100%;
+        text-align: center;
+        margin-bottom: 0.25rem;
     }
 }

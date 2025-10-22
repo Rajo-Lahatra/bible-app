@@ -8,6 +8,69 @@ export const bibleData = {
 const frenchChapterCache = {};
 let isOldTestamentLoaded = false;
 
+// Variable pour suivre le mode d'affichage actuel
+let currentDisplayMode = 'both'; // 'malagasy-only', 'french-only', 'both'
+
+// Fonction pour changer le mode d'affichage
+export function setDisplayMode(mode) {
+    currentDisplayMode = mode;
+    console.log(`Mode d'affichage changé: ${mode}`);
+    
+    // Mettre à jour l'interface
+    updateDisplayModeUI();
+    
+    // Recharger les versets si un livre et chapitre sont sélectionnés
+    if (currentSelectedBook && document.getElementById('chapter-select').value) {
+        const chapter = parseInt(document.getElementById('chapter-select').value);
+        loadVerses(currentSelectedBook, chapter);
+    }
+}
+
+// Fonction pour obtenir le mode d'affichage actuel
+export function getDisplayMode() {
+    return currentDisplayMode;
+}
+
+// Mettre à jour l'interface utilisateur pour le mode d'affichage
+function updateDisplayModeUI() {
+    const bibleContainer = document.querySelector('.bible-container');
+    const malagasyColumn = document.getElementById('malagasy-column');
+    const frenchColumn = document.getElementById('french-column');
+    const modeButtons = document.querySelectorAll('.display-mode-btn');
+    
+    if (!bibleContainer || !malagasyColumn || !frenchColumn) return;
+    
+    // Mettre à jour les boutons actifs
+    modeButtons.forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.mode === currentDisplayMode);
+    });
+    
+    // Mettre à jour l'affichage des colonnes
+    switch (currentDisplayMode) {
+        case 'malagasy-only':
+            bibleContainer.classList.add('single-column');
+            malagasyColumn.classList.add('active');
+            malagasyColumn.classList.remove('hidden');
+            frenchColumn.classList.remove('active');
+            frenchColumn.classList.add('hidden');
+            break;
+            
+        case 'french-only':
+            bibleContainer.classList.add('single-column');
+            frenchColumn.classList.add('active');
+            frenchColumn.classList.remove('hidden');
+            malagasyColumn.classList.remove('active');
+            malagasyColumn.classList.add('hidden');
+            break;
+            
+        case 'both':
+            bibleContainer.classList.remove('single-column');
+            malagasyColumn.classList.remove('hidden', 'active');
+            frenchColumn.classList.remove('hidden', 'active');
+            break;
+    }
+}
+
 // Liste complète des livres de la Bible en malgache
 export const books = [
     // Ancien Testament
@@ -128,6 +191,9 @@ export async function initializeApp() {
     
     populateBookSelect();
     populateChapterSelect(currentSelectedBook);
+    
+    // Initialiser l'affichage du mode
+    updateDisplayModeUI();
 }
 
 // Précharger l'Ancien Testament en arrière-plan
@@ -778,8 +844,17 @@ export async function loadVerses(book, chapter) {
 
 // AFFICHAGE AVEC ALIGNEMENT DES VERSETS
 function displayVersesWithAlignment(malagasyVersion, malagasyVerses, frenchVersion, frenchVerses, book, chapter) {
-    displayAlignedVerses(malagasyVersion, malagasyVerses, frenchVerses, book, chapter);
-    displayAlignedVerses(frenchVersion, frenchVerses, malagasyVerses, book, chapter);
+    // Mettre à jour la visibilité des conteneurs
+    updateDisplayModeUI();
+    
+    // Afficher seulement les versions nécessaires
+    if (currentDisplayMode === 'malagasy-only' || currentDisplayMode === 'both') {
+        displayAlignedVerses(malagasyVersion, malagasyVerses, frenchVerses, book, chapter);
+    }
+    
+    if (currentDisplayMode === 'french-only' || currentDisplayMode === 'both') {
+        displayAlignedVerses(frenchVersion, frenchVerses, malagasyVerses, book, chapter);
+    }
 }
 
 function displayAlignedVerses(version, verses, otherVerses, book, chapter) {
@@ -827,21 +902,32 @@ function getAllPossibleVerseNumbers(verses1, verses2) {
 }
 
 function syncScroll() {
+    if (currentDisplayMode !== 'both') return;
+    
     const malagasyContainer = document.getElementById('malagasy-verses');
     const frenchContainer = document.getElementById('french-verses');
     if (!malagasyContainer || !frenchContainer) return;
 
     let isScrolling = false;
+    
     function handleScroll(source, target) {
-        if (isScrolling) return;
+        if (isScrolling || !target) return;
         isScrolling = true;
         const scrollPercentage = source.scrollTop / (source.scrollHeight - source.clientHeight);
         target.scrollTop = scrollPercentage * (target.scrollHeight - target.clientHeight);
         setTimeout(() => { isScrolling = false; }, 100);
     }
 
-    malagasyContainer.addEventListener('scroll', () => handleScroll(malagasyContainer, frenchContainer));
-    frenchContainer.addEventListener('scroll', () => handleScroll(frenchContainer, malagasyContainer));
+    // Nettoyer les écouteurs existants
+    malagasyContainer.removeEventListener('scroll', malagasyContainer._scrollHandler);
+    frenchContainer.removeEventListener('scroll', frenchContainer._scrollHandler);
+    
+    // Ajouter les nouveaux écouteurs
+    malagasyContainer._scrollHandler = () => handleScroll(malagasyContainer, frenchContainer);
+    frenchContainer._scrollHandler = () => handleScroll(frenchContainer, malagasyContainer);
+    
+    malagasyContainer.addEventListener('scroll', malagasyContainer._scrollHandler);
+    frenchContainer.addEventListener('scroll', frenchContainer._scrollHandler);
 }
 
 // Initialisation

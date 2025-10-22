@@ -3,8 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bible Bilingue Malgache-Français</title>
+    <title>Bible en Malgache et en Français</title>
     <link rel="stylesheet" href="styles/main.css">
+    <link rel="stylesheet" href="styles/responsive.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
@@ -16,6 +17,15 @@
             <select id="chapter-select">
                 <option value="">Chapitre</option>
             </select>
+            
+            <!-- Ajout des boutons de mode d'affichage -->
+            <div class="display-mode-container">
+                <span class="mode-label">Affichage:</span>
+                <button class="display-mode-btn active" data-mode="both">Les deux</button>
+                <button class="display-mode-btn" data-mode="malagasy-only">Malgache</button>
+                <button class="display-mode-btn" data-mode="french-only">Français</button>
+            </div>
+            
             <button id="theme-toggle">🌙</button>
         </div>
     </header>
@@ -23,7 +33,7 @@
     <main class="bible-container">
         <div class="bible-column" id="malagasy-column">
             <div class="column-header">
-                <h3>Bible Malgache</h3>
+                <h3>Bible en Malgache</h3>
                 <div class="tools">
                     <button class="tool-btn" data-tool="highlight">🖍️</button>
                     <button class="tool-btn" data-tool="comment">💬</button>
@@ -34,7 +44,7 @@
 
         <div class="bible-column" id="french-column">
             <div class="column-header">
-                <h3>Bible Française (LSG)</h3>
+                <h3>Bible en Français</h3>
                 <div class="tools">
                     <button class="tool-btn" data-tool="highlight">🖍️</button>
                     <button class="tool-btn" data-tool="comment">💬</button>
