@@ -6,6 +6,7 @@ export const bibleData = {
 
 // Cache pour les chapitres français déjà chargés
 const frenchChapterCache = {};
+let isOldTestamentLoaded = false; // Flag pour suivre si l'Ancien Testament a été chargé
 
 // Liste complète des livres de la Bible en malgache
 export const books = [
@@ -88,8 +89,24 @@ export async function initializeApp() {
     await loadMalagasyBible();
     // Initialiser bibleData.french comme objet vide - chargement à la demande
     bibleData.french = {};
+    
+    // Précharger l'Ancien Testament en arrière-plan
+    preloadOldTestament();
+    
     populateBookSelect();
     populateChapterSelect('Matio');
+}
+
+// Précharger l'Ancien Testament en arrière-plan
+async function preloadOldTestament() {
+    try {
+        console.log('Préchargement de l\'Ancien Testament en arrière-plan...');
+        await loadOldTestamentFromPDFFile();
+        isOldTestamentLoaded = true;
+        console.log('Préchargement de l\'Ancien Testament terminé');
+    } catch (error) {
+        console.error('Erreur lors du préchargement de l\'Ancien Testament:', error);
+    }
 }
 
 async function loadMalagasyBible() {
@@ -142,17 +159,20 @@ async function loadFrenchChapterOnDemand(malagasyBook, chapter) {
     
     // Vérifier le cache d'abord
     if (frenchChapterCache[cacheKey]) {
+        console.log(`Chapitre ${cacheKey} trouvé dans le cache`);
         return frenchChapterCache[cacheKey];
     }
     
     // Déterminer si c'est l'Ancien ou le Nouveau Testament
     if (oldTestamentBooks.includes(malagasyBook)) {
         // Ancien Testament - utiliser le PDF
+        console.log(`Chargement de l'Ancien Testament: ${malagasyBook} ${chapter}`);
         const verses = await loadOldTestamentFromPDF(malagasyBook, chapter);
         frenchChapterCache[cacheKey] = verses;
         return verses;
     } else {
         // Nouveau Testament - utiliser les fichiers individuels
+        console.log(`Chargement du Nouveau Testament: ${malagasyBook} ${chapter}`);
         const verses = await loadNewTestamentFromIndividualFile(malagasyBook, chapter);
         frenchChapterCache[cacheKey] = verses;
         return verses;
@@ -161,16 +181,21 @@ async function loadFrenchChapterOnDemand(malagasyBook, chapter) {
 
 // Charger l'Ancien Testament depuis le PDF texte
 async function loadOldTestamentFromPDF(malagasyBook, chapter) {
-    // Si le livre n'est pas encore chargé, charger tout l'Ancien Testament depuis le PDF
-    if (!bibleData.french[malagasyBook] || !bibleData.french[malagasyBook][chapter]) {
+    console.log(`Tentative de chargement: ${malagasyBook} ${chapter}`);
+    
+    // Si l'Ancien Testament n'a pas encore été chargé, le charger maintenant
+    if (!isOldTestamentLoaded) {
+        console.log('Ancien Testament pas encore chargé, chargement immédiat...');
         await loadOldTestamentFromPDFFile();
     }
     
     // Vérifier si le chapitre existe maintenant
     if (bibleData.french[malagasyBook] && bibleData.french[malagasyBook][chapter]) {
+        console.log(`✓ Chapitre trouvé: ${malagasyBook} ${chapter}`);
         return bibleData.french[malagasyBook][chapter];
     }
     
+    console.log(`✗ Chapitre non trouvé: ${malagasyBook} ${chapter}`);
     // Fallback: générer des données mock
     return generateMockFrenchChapter(malagasyBook, chapter);
 }
@@ -178,17 +203,21 @@ async function loadOldTestamentFromPDF(malagasyBook, chapter) {
 // Charger tout l'Ancien Testament depuis le fichier PDF texte
 async function loadOldTestamentFromPDFFile() {
     try {
-        console.log('Chargement de l\'Ancien Testament depuis le PDF...');
+        console.log('Début du chargement de l\'Ancien Testament depuis le PDF...');
         
         const response = await fetch('/data/french-bible/bible-fr.txt');
         if (!response.ok) {
-            throw new Error('Fichier PDF texte non trouvé');
+            throw new Error(`Fichier PDF texte non trouvé: ${response.status} ${response.statusText}`);
         }
         
         const pdfText = await response.text();
+        console.log(`Fichier PDF chargé, taille: ${pdfText.length} caractères`);
+        
         const parsedData = parsePDFText(pdfText);
+        console.log('Données parsées:', Object.keys(parsedData));
         
         // Organiser les données dans bibleData.french pour l'Ancien Testament seulement
+        let loadedBooks = 0;
         for (const [frenchBookName, chapters] of Object.entries(parsedData)) {
             const malagasyBook = frenchToMalagasyMapping[frenchBookName];
             if (malagasyBook && oldTestamentBooks.includes(malagasyBook)) {
@@ -197,14 +226,21 @@ async function loadOldTestamentFromPDFFile() {
                 }
                 // Fusionner les chapitres
                 Object.assign(bibleData.french[malagasyBook], chapters);
-                console.log(`✓ ${frenchBookName} -> ${malagasyBook}`);
+                loadedBooks++;
+                console.log(`✓ ${frenchBookName} -> ${malagasyBook} (${Object.keys(chapters).length} chapitres)`);
+            } else if (malagasyBook) {
+                console.log(`⚠ Livre mappé mais pas dans l'Ancien Testament: ${frenchBookName} -> ${malagasyBook}`);
+            } else {
+                console.log(`⚠ Livre non mappé: ${frenchBookName}`);
             }
         }
         
-        console.log('Ancien Testament chargé depuis PDF');
+        console.log(`Ancien Testament chargé depuis PDF: ${loadedBooks} livres`);
+        isOldTestamentLoaded = true;
         
     } catch (error) {
         console.error('Erreur lors du chargement du PDF:', error);
+        isOldTestamentLoaded = false;
     }
 }
 
@@ -215,6 +251,7 @@ async function loadNewTestamentFromIndividualFile(malagasyBook, chapter) {
     );
     
     if (!fileCode) {
+        console.warn(`Aucun code trouvé pour ${malagasyBook}`);
         return generateMockFrenchChapter(malagasyBook, chapter);
     }
     
@@ -222,13 +259,16 @@ async function loadNewTestamentFromIndividualFile(malagasyBook, chapter) {
     const fileName = `frajnd_${fileCode}_${chapterStr}_read.txt`;
     const filePath = `/data/french-bible/${fileName}`;
     
+    console.log(`Tentative de chargement: ${fileName}`);
+    
     try {
         const response = await fetch(filePath);
         if (response.ok) {
             const text = await response.text();
+            console.log(`Fichier trouvé: ${fileName}, taille: ${text.length} caractères`);
             return parseFrenchBibleTextImproved(text, malagasyBook, chapter);
         } else {
-            console.warn(`✗ Fichier non trouvé: ${fileName}`);
+            console.warn(`✗ Fichier non trouvé: ${fileName} (${response.status})`);
         }
     } catch (error) {
         console.warn(`✗ Erreur de chargement pour ${fileName}:`, error);
@@ -237,7 +277,7 @@ async function loadNewTestamentFromIndividualFile(malagasyBook, chapter) {
     return generateMockFrenchChapter(malagasyBook, chapter);
 }
 
-// Parser pour le texte extrait du PDF
+// Parser pour le texte extrait du PDF - VERSION AMÉLIORÉE
 function parsePDFText(pdfText) {
     const books = {};
     const lines = pdfText.split('\n');
@@ -246,13 +286,24 @@ function parsePDFText(pdfText) {
     let currentChapter = 0;
     let currentVerse = 0;
     let verseText = '';
+    let lineCount = 0;
     
+    console.log(`Parsing PDF texte, ${lines.length} lignes`);
+
     lines.forEach((line, index) => {
+        lineCount++;
         line = line.trim();
         if (!line) return;
         
         // Détecter un nouveau livre (ligne en majuscules seule, sans chiffres)
-        if (line === line.toUpperCase() && line.length > 3 && !line.match(/\d/) && !line.includes('...')) {
+        const isPotentialBook = line === line.toUpperCase() && 
+                               line.length > 3 && 
+                               !line.match(/\d/) && 
+                               !line.includes('...') &&
+                               !line.includes('SOMMAIRES') &&
+                               !line.includes('TABLE DES MATIERES');
+        
+        if (isPotentialBook) {
             // Sauvegarder le dernier verset du livre précédent
             if (currentBook && currentChapter > 0 && currentVerse > 0 && verseText) {
                 if (!books[currentBook][currentChapter]) {
@@ -268,12 +319,12 @@ function parsePDFText(pdfText) {
             if (!books[currentBook]) {
                 books[currentBook] = {};
             }
-            console.log(`Nouveau livre détecté: ${currentBook}`);
+            console.log(`📖 Nouveau livre détecté: "${currentBook}" à la ligne ${index}`);
             return;
         }
         
-        // Détecter un nouveau chapitre (format: "GENESE 1" ou "EXODE 1")
-        const chapterMatch = line.match(/^([A-ZÉÈÊÀÂÇÔÎÏËÜÆŒ]+)\s+(\d+)$/);
+        // Détecter un nouveau chapitre (format: "GENESE 1" ou "EXODE 1" ou "GENÈSE 1")
+        const chapterMatch = line.match(/^([A-ZÉÈÊÀÂÇÔÎÏËÜÆŒ]+)\s+(\d+)$/i);
         if (chapterMatch && currentBook) {
             // Sauvegarder le dernier verset du chapitre précédent
             if (currentChapter > 0 && currentVerse > 0 && verseText) {
@@ -286,7 +337,7 @@ function parsePDFText(pdfText) {
             if (!books[currentBook][currentChapter]) {
                 books[currentBook][currentChapter] = {};
             }
-            console.log(`  Chapitre ${currentChapter} de ${currentBook}`);
+            console.log(`   📑 Chapitre ${currentChapter} de ${currentBook}`);
             return;
         }
         
@@ -305,6 +356,10 @@ function parsePDFText(pdfText) {
         
         // Si on a un livre, un chapitre et un verset en cours, ajouter le texte
         if (currentBook && currentChapter > 0 && currentVerse > 0 && line) {
+            // Ignorer les lignes qui sont probablement des en-têtes ou numéros de page
+            if (line.match(/^\d+$/)) return; // Numéro de page seul
+            if (line.match(/^[ivxlcdm]+$/i)) return; // Chiffres romains
+            
             if (verseText) verseText += ' ';
             verseText += line;
         }
@@ -318,6 +373,7 @@ function parsePDFText(pdfText) {
         books[currentBook][currentChapter][currentVerse] = verseText.trim();
     }
     
+    console.log(`Parsing terminé: ${Object.keys(books).length} livres trouvés`);
     return books;
 }
 
@@ -368,7 +424,7 @@ function parseFrenchBibleTextImproved(text, bookName, chapter) {
     return verses;
 }
 
-// FONCTIONS EXISTANTES
+// FONCTIONS EXISTANTES (inchangées)
 
 function parseBibleText(text, bookName) {
     const chapters = {};
@@ -486,7 +542,7 @@ function getRealisticVerseCount(book, chapter) {
     return 30;
 }
 
-// FONCTIONS D'AFFICHAGE
+// FONCTIONS D'AFFICHAGE (inchangées)
 export function populateBookSelect() {
     const bookSelect = document.getElementById('book-select');
     if (!bookSelect) return;
