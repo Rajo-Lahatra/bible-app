@@ -377,7 +377,7 @@ class BibleApp {
             activeBtn.classList.add('active');
         }
 
-        this.activeTool = color ? `pencil-${color}` : tool;
+        this.activeTool = (tool === 'pencil' && color) ? `pencil-${color}` : tool;
 
         if (tool.startsWith('pencil-')) {
             this.enableHighlighting();
