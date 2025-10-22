@@ -672,7 +672,13 @@ export async function loadVerses(book, chapter) {
         }
         bibleData.french[book][chapter] = frenchVerses;
     }
-
+// Dans loadVerses, après avoir chargé frenchVerses
+if (book === 'Joba' && chapter === 33) {
+    console.log('🔍 Diagnostic Job 33:');
+    console.log('Verse 13:', frenchVerses[13]);
+    console.log('Verse 14:', frenchVerses[14]);
+    console.log('Tous les versets:', frenchVerses);
+}
     // Afficher les versets avec alignement
     displayVersesWithAlignment('malagasy', malagasyVerses, 'french', frenchVerses, book, chapter);
     
