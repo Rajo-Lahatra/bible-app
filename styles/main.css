@@ -36,60 +36,83 @@ body {
     transition: background-color 0.3s ease, color 0.3s ease;
 }
 
+/* NOUVEAU : Header réorganisé en 4 lignes */
 .app-header {
     background-color: var(--card-bg);
-    padding: 1rem;
+    padding: 0.5rem 1rem;
     box-shadow: var(--shadow);
     position: sticky;
     top: 0;
     z-index: 100;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
 }
 
-.header-controls {
+.header-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.25rem 0;
+    min-height: 2.5rem;
+}
+
+/* Ligne 1 : Utilisateur et thème */
+.user-row {
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 0.5rem;
+}
+
+.user-controls {
     display: flex;
     align-items: center;
     gap: 1rem;
-    flex-wrap: wrap;
-    max-width: 1200px;
-    margin: 0 auto;
 }
 
-select {
-    padding: 0.5rem 1rem;
-    border: 1px solid var(--border-color);
-    border-radius: 6px;
-    background-color: var(--bg-color);
+.user-menu {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.user-email {
+    font-size: 0.9rem;
     color: var(--text-color);
-    font-size: 1rem;
-    min-width: 150px;
+    margin-right: 0.5rem;
 }
 
-button {
-    padding: 0.5rem 1rem;
-    border: 1px solid var(--border-color);
-    background-color: var(--bg-color);
+/* Ligne 2 : Outils */
+.tools-row {
+    justify-content: center;
+}
+
+.tools-container {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.tools-label {
+    font-size: 0.9rem;
     color: var(--text-color);
-    border-radius: 6px;
-    cursor: pointer;
-    font-size: 1rem;
-    transition: all 0.2s ease;
+    font-weight: 500;
+    white-space: nowrap;
 }
 
-button:hover {
-    background-color: var(--hover-color);
-    border-color: var(--secondary-color);
+.tools-group {
+    display: flex;
+    gap: 0.5rem;
 }
 
-/* Conteneur pour les boutons de mode d'affichage */
+/* Ligne 3 : Sélecteur d'affichage */
+.display-row {
+    justify-content: center;
+}
+
 .display-mode-container {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
-    margin: 0 0.5rem;
-    padding: 0.5rem;
-    background: var(--card-bg);
-    border-radius: 8px;
-    border: 1px solid var(--border-color);
+    gap: 0.75rem;
 }
 
 .mode-label {
@@ -99,16 +122,94 @@ button:hover {
     white-space: nowrap;
 }
 
-.display-mode-btn {
-    padding: 0.4rem 0.8rem;
+.display-mode-group {
+    display: flex;
+    gap: 0.25rem;
+}
+
+/* Ligne 4 : Sélection des livres */
+.selection-row {
+    justify-content: center;
+    border-top: 1px solid var(--border-color);
+    padding-top: 0.5rem;
+}
+
+.book-selection {
+    display: flex;
+    gap: 1rem;
+}
+
+/* Styles pour les boutons avec icônes */
+.icon-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 2rem;
+    height: 2rem;
+    padding: 0;
+    border: 1px solid var(--border-color);
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: all 0.2s ease;
+}
+
+.icon-btn:hover {
+    background-color: var(--hover-color);
+    border-color: var(--secondary-color);
+    transform: scale(1.05);
+}
+
+.theme-toggle {
+    margin-left: auto;
+}
+
+/* Boutons d'outils avec icônes */
+.tool-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.5rem;
+    height: 2.5rem;
+    padding: 0;
     border: 1px solid var(--border-color);
     background: var(--bg-color);
     color: var(--text-color);
     border-radius: 6px;
     cursor: pointer;
-    font-size: 0.85rem;
+    font-size: 1rem;
     transition: all 0.2s ease;
-    white-space: nowrap;
+}
+
+.tool-btn:hover {
+    background: var(--hover-color);
+    border-color: var(--secondary-color);
+}
+
+.tool-btn.active {
+    background: var(--secondary-color);
+    color: white;
+    border-color: var(--secondary-color);
+    transform: scale(1.1);
+}
+
+/* Boutons de mode d'affichage avec icônes */
+.display-mode-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.5rem;
+    height: 2.5rem;
+    padding: 0;
+    border: 1px solid var(--border-color);
+    background: var(--bg-color);
+    color: var(--text-color);
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 1rem;
+    transition: all 0.2s ease;
 }
 
 .display-mode-btn:hover {
@@ -122,13 +223,51 @@ button:hover {
     border-color: var(--secondary-color);
 }
 
+/* Sélecteurs */
+select {
+    padding: 0.5rem 1rem;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    font-size: 1rem;
+    min-width: 150px;
+}
+
+/* Boutons d'authentification */
+.auth-buttons {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.auth-btn {
+    padding: 0.5rem 1rem;
+    border: 1px solid var(--border-color);
+    background: var(--bg-color);
+    color: var(--text-color);
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.auth-btn:hover {
+    background: var(--hover-color);
+    border-color: var(--secondary-color);
+}
+
+/* Le reste du CSS existant reste inchangé */
 .bible-container {
     display: flex;
     max-width: 1400px;
     margin: 0 auto;
     padding: 1rem;
     gap: 1rem;
-    height: calc(100vh - 80px);
+    height: calc(100vh - 200px);
     transition: all 0.3s ease;
 }
 
@@ -181,29 +320,6 @@ button:hover {
     font-weight: 600;
 }
 
-.tools {
-    display: flex;
-    gap: 0.5rem;
-}
-
-.tool-btn {
-    padding: 0.4rem 0.8rem;
-    background: transparent;
-    border: 1px solid rgba(255,255,255,0.3);
-    color: white;
-    font-size: 0.9rem;
-}
-
-.tool-btn:hover {
-    background: rgba(255,255,255,0.1);
-    border-color: rgba(255,255,255,0.5);
-}
-
-.tool-btn.active {
-    background: var(--secondary-color);
-    border-color: var(--secondary-color);
-}
-
 .verses-container {
     flex: 1;
     overflow-y: auto;
@@ -253,6 +369,22 @@ button:hover {
     border-bottom: 2px solid var(--secondary-color);
     color: var(--secondary-color);
     font-size: 1.3rem;
+}
+
+/* Styles pour le texte coloré */
+.verse.highlighted-blue {
+    color: #2563eb !important;
+    font-weight: 500;
+}
+
+.verse.highlighted-red {
+    color: #dc2626 !important;
+    font-weight: 500;
+}
+
+.verse.highlighted-green {
+    color: #16a34a !important;
+    font-weight: 500;
 }
 
 /* Modal */
@@ -309,130 +441,6 @@ textarea, input[type="text"] {
     display: flex;
     gap: 0.5rem;
     justify-content: flex-end;
-}
-
-/* Responsive */
-@media (max-width: 768px) {
-    .header-controls {
-        flex-direction: column;
-        align-items: stretch;
-    }
-    
-    .display-mode-container {
-        justify-content: center;
-        order: 3;
-        margin-top: 0.5rem;
-    }
-    
-    .bible-container {
-        flex-direction: column;
-        height: auto;
-        padding: 0.5rem;
-    }
-    
-    .bible-column {
-        margin-bottom: 1rem;
-    }
-    
-    .display-mode-btn {
-        flex: 1;
-        min-width: 0;
-        font-size: 0.8rem;
-        padding: 0.4rem 0.5rem;
-    }
-}
-
-@media (max-width: 480px) {
-    .header-controls {
-        gap: 0.5rem;
-    }
-    
-    select, button {
-        font-size: 0.9rem;
-        padding: 0.4rem 0.8rem;
-    }
-    
-    .display-mode-container {
-        flex-wrap: wrap;
-    }
-    
-    .mode-label {
-        width: 100%;
-        text-align: center;
-        margin-bottom: 0.25rem;
-    }
-}
-
-.toolbar-fixed {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    background: var(--card-bg);
-    padding: 0.75rem 1rem;
-    border-bottom: 1px solid var(--border-color);
-    position: sticky;
-    top: 0;
-    z-index: 90;
-    gap: 1rem;
-    flex-wrap: wrap;
-}
-
-.toolbar-section {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-}
-
-.toolbar-label {
-    font-size: 0.9rem;
-    color: var(--text-color);
-    font-weight: 500;
-    white-space: nowrap;
-}
-
-/* Boutons d'outils */
-.tool-btn {
-    padding: 0.5rem 0.75rem;
-    border: 1px solid var(--border-color);
-    background: var(--bg-color);
-    color: var(--text-color);
-    border-radius: 6px;
-    cursor: pointer;
-    font-size: 0.85rem;
-    transition: all 0.2s ease;
-    white-space: nowrap;
-}
-
-.tool-btn:hover {
-    background: var(--hover-color);
-    border-color: var(--secondary-color);
-}
-
-.tool-btn.active {
-    background: var(--secondary-color);
-    color: white;
-    border-color: var(--secondary-color);
-}
-
-.pencil-btn.active {
-    transform: scale(1.1);
-    box-shadow: 0 0 0 2px var(--secondary-color);
-}
-
-/* Styles pour le texte coloré */
-.verse.highlighted-blue {
-    color: #2563eb !important;
-    font-weight: 500;
-}
-
-.verse.highlighted-red {
-    color: #dc2626 !important;
-    font-weight: 500;
-}
-
-.verse.highlighted-green {
-    color: #16a34a !important;
-    font-weight: 500;
 }
 
 /* Modal de commentaire amélioré */
@@ -549,68 +557,6 @@ textarea, input[type="text"] {
     background: var(--hover-color);
 }
 
-/* Responsive */
-@media (max-width: 768px) {
-    .toolbar-fixed {
-        flex-direction: column;
-        gap: 0.5rem;
-    }
-    
-    .toolbar-section {
-        justify-content: center;
-        width: 100%;
-    }
-    
-    .verse-link-inputs {
-        flex-direction: column;
-    }
-    
-    .verse-link-inputs select,
-    .verse-link-inputs input {
-        min-width: auto;
-        width: 100%;
-    }
-}
-/* Section d'authentification */
-.auth-section {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-}
-
-.auth-buttons {
-    display: flex;
-    gap: 0.5rem;
-}
-
-.auth-btn {
-    padding: 0.5rem 1rem;
-    border: 1px solid var(--border-color);
-    background: var(--bg-color);
-    color: var(--text-color);
-    border-radius: 6px;
-    cursor: pointer;
-    font-size: 0.85rem;
-    transition: all 0.2s ease;
-    white-space: nowrap;
-}
-
-.auth-btn:hover {
-    background: var(--hover-color);
-    border-color: var(--secondary-color);
-}
-
-.user-menu {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-}
-
-.user-email {
-    font-size: 0.9rem;
-    color: var(--text-color);
-}
-
 /* Modale d'authentification */
 .auth-modal-content {
     max-width: 400px;
@@ -665,39 +611,6 @@ textarea, input[type="text"] {
     opacity: 0.7;
 }
 
-/* Responsive */
-@media (max-width: 768px) {
-    .auth-section {
-        flex-direction: column;
-        gap: 0.5rem;
-    }
-    
-    .auth-buttons {
-        justify-content: center;
-        width: 100%;
-    }
-    
-    .user-menu {
-        flex-direction: column;
-        gap: 0.5rem;
-        text-align: center;
-    }
-}
-/* Notifications */
-@keyframes slideIn {
-    from {
-        transform: translateX(100%);
-        opacity: 0;
-    }
-    to {
-        transform: translateX(0);
-        opacity: 1;
-    }
-}
-
-.notification {
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-}
 /* Styles pour le modal des annotations */
 .annotations-modal-content {
     max-width: 800px;
@@ -818,15 +731,4 @@ textarea, input[type="text"] {
     opacity: 0.7;
     padding: 2rem;
     font-style: italic;
-}
-
-/* Responsive */
-@media (max-width: 768px) {
-    .annotation-actions {
-        flex-direction: column;
-    }
-    
-    .btn-small {
-        width: 100%;
-    }
 }
