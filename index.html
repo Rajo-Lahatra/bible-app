@@ -5,10 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Bible : Malgache-Français</title>
     <link rel="stylesheet" href="styles/main.css">
-    <link rel="stylesheet" href="styles/responsive.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <!-- Ajout des icônes Font Awesome -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
     <header class="app-header">
@@ -28,7 +25,7 @@
                 <button class="display-mode-btn" data-mode="french-only">Français</button>
             </div>
             
-            <button id="theme-toggle" class="theme-toggle-btn">🌙</button>
+            <button id="theme-toggle">🌙</button>
             
             <!-- Section d'authentification -->
             <div class="auth-section">
@@ -38,12 +35,8 @@
                 </div>
                 <div id="user-menu" class="user-menu" style="display: none;">
                     <span id="user-email" class="user-email"></span>
-                    <button id="my-annotations-btn" class="auth-btn">
-                        <i class="fas fa-highlighter"></i> Mes annotations
-                    </button>
-                    <button id="logout-btn" class="auth-btn">
-                        <i class="fas fa-sign-out-alt"></i> Déconnexion
-                    </button>
+                    <button id="my-annotations-btn" class="auth-btn">Mes annotations</button>
+                    <button id="logout-btn" class="auth-btn">Déconnexion</button>
                 </div>
             </div>
         </div>
@@ -53,19 +46,19 @@
             <div class="toolbar-section">
                 <span class="toolbar-label">Outils:</span>
                 <button class="tool-btn active" data-tool="pointer" title="Pointeur">
-                    <i class="fas fa-mouse-pointer"></i> Pointeur
+                    🖱️ Pointeur
                 </button>
                 <button class="tool-btn" data-tool="pencil-blue" title="Surligner en bleu">
-                    <i class="fas fa-pencil-alt" style="color: #3b82f6;"></i> Bleu
+                    🔵 Bleu
                 </button>
                 <button class="tool-btn" data-tool="pencil-red" title="Surligner en rouge">
-                    <i class="fas fa-pencil-alt" style="color: #ef4444;"></i> Rouge
+                    🔴 Rouge
                 </button>
                 <button class="tool-btn" data-tool="pencil-green" title="Surligner en vert">
-                    <i class="fas fa-pencil-alt" style="color: #10b981;"></i> Vert
+                    🟢 Vert
                 </button>
                 <button class="tool-btn" data-tool="comment" title="Ajouter un commentaire">
-                    <i class="fas fa-comment"></i> Commentaire
+                    💬 Commentaire
                 </button>
             </div>
         </div>
