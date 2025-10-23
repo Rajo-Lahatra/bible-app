@@ -5,7 +5,10 @@ import {
     getVerses, 
     getChapters,
     books,
-    bookNames 
+    bookNames,
+    updateColumnHeaders,
+    getCurrentBook,
+    getCurrentChapter
 } from './bible-data.js';
 import { 
     saveHighlight, 
@@ -61,8 +64,10 @@ class BibleApp {
             await this.loadUserData();
         }
 
-        // Initialiser le défilement synchronisé
-        this.setupScrollSync();
+        // Appliquer le mode d'affichage sauvegardé
+        const savedMode = getDisplayMode();
+        setDisplayMode(savedMode);
+        this.displayMode = savedMode;
     }
 
     async initializeBooks() {
@@ -161,7 +166,9 @@ class BibleApp {
         // Mode d'affichage
         document.querySelectorAll('.display-mode-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
-                this.setDisplayMode(e.target.dataset.mode);
+                const mode = e.target.dataset.mode;
+                setDisplayMode(mode);
+                this.displayMode = mode;
             });
         });
 
@@ -199,59 +206,6 @@ class BibleApp {
         
         // Modal d'édition de commentaire
         this.initializeEditCommentModal();
-    }
-
-    // NOUVELLE MÉTHODE : Configuration du défilement synchronisé
-    setupScrollSync() {
-        const malagasyContainer = document.getElementById('malagasy-verses');
-        const frenchContainer = document.getElementById('french-verses');
-
-        if (!malagasyContainer || !frenchContainer) return;
-
-        const syncScroll = (source, target) => {
-            if (this.isScrolling) return;
-            
-            this.isScrolling = true;
-            
-            // Calculer le pourcentage de défilement
-            const scrollPercent = source.scrollTop / (source.scrollHeight - source.clientHeight);
-            
-            // Appliquer le même pourcentage à l'autre colonne
-            target.scrollTop = scrollPercent * (target.scrollHeight - target.clientHeight);
-            
-            setTimeout(() => {
-                this.isScrolling = false;
-            }, 50);
-        };
-
-        // Écouteurs pour le défilement synchronisé
-        malagasyContainer.addEventListener('scroll', () => {
-            if (this.displayMode === 'both') {
-                syncScroll(malagasyContainer, frenchContainer);
-            }
-        });
-
-        frenchContainer.addEventListener('scroll', () => {
-            if (this.displayMode === 'both') {
-                syncScroll(frenchContainer, malagasyContainer);
-            }
-        });
-    }
-
-    // MÉTHODE MODIFIÉE : Gestion du mode d'affichage
-    setDisplayMode(mode) {
-        setDisplayMode(mode);
-        this.displayMode = mode;
-        
-        // Réinitialiser l'état de défilement
-        this.isScrolling = false;
-        
-        // Réactiver le défilement synchronisé si on revient en mode "both"
-        if (mode === 'both') {
-            setTimeout(() => {
-                this.setupScrollSync();
-            }, 100);
-        }
     }
 
     initializeAuthModal() {
@@ -821,10 +775,8 @@ class BibleApp {
             this.displayVerses(malagasyVerses, 'malagasy');
             this.displayVerses(frenchVerses, 'french');
             
-            // Réinitialiser le défilement synchronisé après le chargement
-            setTimeout(() => {
-                this.setupScrollSync();
-            }, 100);
+            // METTRE À JOUR LES EN-TÊTES AVEC LE LIVRE ET CHAPITRE
+            updateColumnHeaders(this.currentBook, this.currentChapter);
             
         } catch (error) {
             console.error('Erreur lors du chargement des versets:', error);
@@ -942,7 +894,7 @@ class BibleApp {
         localStorage.setItem('theme', newTheme);
     }
 
-    // NOUVELLES MÉTHODES POUR LA GESTION DES ANNOTATIONS
+    // MÉTHODES POUR LA GESTION DES ANNOTATIONS
 
     async openAnnotationsModal() {
         if (!this.currentUser) {

@@ -2,15 +2,170 @@
 import { initSupabase } from './supabase-client.js';
 
 let supabase;
+let currentBook = '';
+let currentChapter = '';
 
 export async function initializeApp() {
     try {
         supabase = await initSupabase();
         console.log('✅ Bible data initialized from Supabase');
+        
+        // Initialiser le défilement synchronisé après le chargement
+        setTimeout(() => {
+            setupScrollSync();
+        }, 1000);
+        
         return true;
     } catch (error) {
         console.error('❌ Error initializing Bible data:', error);
         return false;
+    }
+}
+
+// NOUVELLE FONCTION : Défilement synchronisé
+let isScrolling = false;
+
+export function setupScrollSync() {
+    const malagasyContainer = document.getElementById('malagasy-verses');
+    const frenchContainer = document.getElementById('french-verses');
+
+    if (!malagasyContainer || !frenchContainer) {
+        console.log('Conteneurs de versets non trouvés, réessai dans 500ms...');
+        setTimeout(setupScrollSync, 500);
+        return;
+    }
+
+    // Supprimer les écouteurs existants pour éviter les doublons
+    malagasyContainer.removeEventListener('scroll', handleMalagasyScroll);
+    frenchContainer.removeEventListener('scroll', handleFrenchScroll);
+
+    function handleMalagasyScroll() {
+        if (isScrolling) return;
+        isScrolling = true;
+        
+        const scrollPercent = malagasyContainer.scrollTop / (malagasyContainer.scrollHeight - malagasyContainer.clientHeight);
+        frenchContainer.scrollTop = scrollPercent * (frenchContainer.scrollHeight - frenchContainer.clientHeight);
+        
+        setTimeout(() => {
+            isScrolling = false;
+        }, 50);
+    }
+
+    function handleFrenchScroll() {
+        if (isScrolling) return;
+        isScrolling = true;
+        
+        const scrollPercent = frenchContainer.scrollTop / (frenchContainer.scrollHeight - frenchContainer.clientHeight);
+        malagasyContainer.scrollTop = scrollPercent * (malagasyContainer.scrollHeight - malagasyContainer.clientHeight);
+        
+        setTimeout(() => {
+            isScrolling = false;
+        }, 50);
+    }
+
+    // Ajouter les écouteurs d'événements
+    malagasyContainer.addEventListener('scroll', handleMalagasyScroll);
+    frenchContainer.addEventListener('scroll', handleFrenchScroll);
+    
+    console.log('✅ Scroll synchronisé activé');
+}
+
+// FONCTION AMÉLIORÉE : Gestion des modes d'affichage
+export function setDisplayMode(mode) {
+    const container = document.querySelector('.bible-container');
+    if (!container) {
+        console.error('Conteneur Bible non trouvé');
+        return;
+    }
+
+    // Réinitialiser toutes les classes
+    container.className = 'bible-container';
+    
+    const malagasyColumn = document.getElementById('malagasy-column');
+    const frenchColumn = document.getElementById('french-column');
+    
+    if (!malagasyColumn || !frenchColumn) {
+        console.error('Colonnes non trouvées');
+        return;
+    }
+
+    // Réinitialiser l'affichage des colonnes
+    malagasyColumn.style.display = 'flex';
+    malagasyColumn.style.flex = '1';
+    malagasyColumn.style.width = 'auto';
+    
+    frenchColumn.style.display = 'flex';
+    frenchColumn.style.flex = '1';
+    frenchColumn.style.width = 'auto';
+
+    switch (mode) {
+        case 'both':
+            container.style.flexDirection = 'row';
+            // Les deux colonnes côte à côte
+            malagasyColumn.style.display = 'flex';
+            frenchColumn.style.display = 'flex';
+            break;
+            
+        case 'malagasy-only':
+            container.style.flexDirection = 'column';
+            // Seulement malgache
+            malagasyColumn.style.display = 'flex';
+            malagasyColumn.style.width = '100%';
+            frenchColumn.style.display = 'none';
+            break;
+            
+        case 'french-only':
+            container.style.flexDirection = 'column';
+            // Seulement français
+            frenchColumn.style.display = 'flex';
+            frenchColumn.style.width = '100%';
+            malagasyColumn.style.display = 'none';
+            break;
+    }
+
+    // Sauvegarder la préférence
+    localStorage.setItem('displayMode', mode);
+    
+    // Mettre à jour les boutons
+    document.querySelectorAll('.display-mode-btn').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    
+    const activeButton = document.querySelector(`[data-mode="${mode}"]`);
+    if (activeButton) {
+        activeButton.classList.add('active');
+    }
+    
+    console.log(`✅ Mode d'affichage changé: ${mode}`);
+    
+    // Réinitialiser le défilement synchronisé si on revient en mode both
+    if (mode === 'both') {
+        setTimeout(() => {
+            setupScrollSync();
+        }, 100);
+    }
+}
+
+export function getDisplayMode() {
+    return localStorage.getItem('displayMode') || 'both';
+}
+
+// FONCTION POUR METTRE À JOUR LES EN-TÊTES
+export function updateColumnHeaders(book, chapter) {
+    currentBook = book;
+    currentChapter = chapter;
+    
+    const malagasyHeader = document.querySelector('#malagasy-column .column-header h3');
+    const frenchHeader = document.querySelector('#french-column .column-header h3');
+    
+    if (malagasyHeader && book && chapter) {
+        const bookNameMalagasy = bookNames.malagasy[book] || book;
+        malagasyHeader.textContent = `${bookNameMalagasy} ${chapter} - Bible Malgache`;
+    }
+    
+    if (frenchHeader && book && chapter) {
+        const bookNameFrench = bookNames.french[book] || book;
+        frenchHeader.textContent = `${bookNameFrench} ${chapter} - Bible Française (LSG)`;
     }
 }
 
@@ -49,41 +204,6 @@ export async function getVerses(book, chapter, language) {
         console.error(`Error in getVerses for ${book} ${chapter} (${language}):`, error);
         return {};
     }
-}
-
-export function setDisplayMode(mode) {
-    // Votre code existant pour setDisplayMode
-    const container = document.querySelector('.bible-container');
-    if (!container) return;
-
-    container.className = 'bible-container';
-    
-    switch (mode) {
-        case 'both':
-            container.classList.add('both-columns');
-            break;
-        case 'malagasy-only':
-            container.classList.add('single-column');
-            document.getElementById('malagasy-column').classList.add('active');
-            break;
-        case 'french-only':
-            container.classList.add('single-column');
-            document.getElementById('french-column').classList.add('active');
-            break;
-    }
-
-    // Sauvegarder la préférence
-    localStorage.setItem('displayMode', mode);
-    
-    // Mettre à jour les boutons
-    document.querySelectorAll('.display-mode-btn').forEach(btn => {
-        btn.classList.remove('active');
-    });
-    document.querySelector(`[data-mode="${mode}"]`).classList.add('active');
-}
-
-export function getDisplayMode() {
-    return localStorage.getItem('displayMode') || 'both';
 }
 
 // Fonctions utilitaires pour les noms de livres
@@ -265,4 +385,13 @@ export async function getChapters(book, language) {
         console.error(`Error in getChapters for ${book} (${language}):`, error);
         return [];
     }
+}
+
+// Fonction pour obtenir le livre et chapitre actuels
+export function getCurrentBook() {
+    return currentBook;
+}
+
+export function getCurrentChapter() {
+    return currentChapter;
 }

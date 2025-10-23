@@ -778,3 +778,27 @@ textarea, input[type="text"] {
         margin-bottom: 0.25rem;
     }
 }
+/* Styles pour les différents modes d'affichage */
+.bible-container.both-columns {
+    display: flex;
+    flex-direction: row;
+}
+
+.bible-container.single-column {
+    flex-direction: column;
+}
+
+.bible-container.single-column .bible-column {
+    width: 100% !important;
+    display: none;
+}
+
+.bible-container.single-column .bible-column.active {
+    display: flex !important;
+}
+
+/* S'assurer que les deux colonnes sont visibles en mode both */
+.bible-container.both-columns .bible-column {
+    display: flex !important;
+    flex: 1;
+}
