@@ -32,6 +32,7 @@ class BibleApp {
         this.linkedVerses = []; // Pour stocker les versets liés
         this.currentUser = null;
         this.editingCommentId = null;
+        this.isScrolling = false; // Pour éviter les boucles de défilement
         
         this.init();
     }
@@ -59,16 +60,33 @@ class BibleApp {
         if (this.currentUser) {
             await this.loadUserData();
         }
+
+        // Initialiser le défilement synchronisé
+        this.setupScrollSync();
     }
 
     async initializeBooks() {
         const bookSelect = document.getElementById('book-select');
         bookSelect.innerHTML = '<option value="">Choisir un livre</option>';
         
+        // Liste des livres du Nouveau Testament
+        const newTestamentBooks = [
+            'MAT', 'MRK', 'LUK', 'JHN', 'ACT', 'ROM', '1CO', '2CO', 'GAL', 'EPH', 
+            'PHP', 'COL', '1TH', '2TH', '1TI', '2TI', 'TIT', 'PHM', 'HEB', 'JAS', 
+            '1PE', '2PE', '1JN', '2JN', '3JN', 'JUD', 'REV'
+        ];
+        
         books.forEach(book => {
             const option = document.createElement('option');
             option.value = book;
             option.textContent = bookNames.french[book];
+            
+            // Colorer en rouge les livres du Nouveau Testament
+            if (newTestamentBooks.includes(book)) {
+                option.style.color = 'red';
+                option.style.fontWeight = 'bold';
+            }
+            
             bookSelect.appendChild(option);
         });
     }
@@ -143,7 +161,7 @@ class BibleApp {
         // Mode d'affichage
         document.querySelectorAll('.display-mode-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
-                setDisplayMode(e.target.dataset.mode);
+                this.setDisplayMode(e.target.dataset.mode);
             });
         });
 
@@ -181,6 +199,59 @@ class BibleApp {
         
         // Modal d'édition de commentaire
         this.initializeEditCommentModal();
+    }
+
+    // NOUVELLE MÉTHODE : Configuration du défilement synchronisé
+    setupScrollSync() {
+        const malagasyContainer = document.getElementById('malagasy-verses');
+        const frenchContainer = document.getElementById('french-verses');
+
+        if (!malagasyContainer || !frenchContainer) return;
+
+        const syncScroll = (source, target) => {
+            if (this.isScrolling) return;
+            
+            this.isScrolling = true;
+            
+            // Calculer le pourcentage de défilement
+            const scrollPercent = source.scrollTop / (source.scrollHeight - source.clientHeight);
+            
+            // Appliquer le même pourcentage à l'autre colonne
+            target.scrollTop = scrollPercent * (target.scrollHeight - target.clientHeight);
+            
+            setTimeout(() => {
+                this.isScrolling = false;
+            }, 50);
+        };
+
+        // Écouteurs pour le défilement synchronisé
+        malagasyContainer.addEventListener('scroll', () => {
+            if (this.displayMode === 'both') {
+                syncScroll(malagasyContainer, frenchContainer);
+            }
+        });
+
+        frenchContainer.addEventListener('scroll', () => {
+            if (this.displayMode === 'both') {
+                syncScroll(frenchContainer, malagasyContainer);
+            }
+        });
+    }
+
+    // MÉTHODE MODIFIÉE : Gestion du mode d'affichage
+    setDisplayMode(mode) {
+        setDisplayMode(mode);
+        this.displayMode = mode;
+        
+        // Réinitialiser l'état de défilement
+        this.isScrolling = false;
+        
+        // Réactiver le défilement synchronisé si on revient en mode "both"
+        if (mode === 'both') {
+            setTimeout(() => {
+                this.setupScrollSync();
+            }, 100);
+        }
     }
 
     initializeAuthModal() {
@@ -432,10 +503,24 @@ class BibleApp {
 
         linkBookSelect.innerHTML = '<option value="">Choisir un livre</option>';
         
+        // Liste des livres du Nouveau Testament (identique à celle utilisée dans initializeBooks)
+        const newTestamentBooks = [
+            'MAT', 'MRK', 'LUK', 'JHN', 'ACT', 'ROM', '1CO', '2CO', 'GAL', 'EPH', 
+            'PHP', 'COL', '1TH', '2TH', '1TI', '2TI', 'TIT', 'PHM', 'HEB', 'JAS', 
+            '1PE', '2PE', '1JN', '2JN', '3JN', 'JUD', 'REV'
+        ];
+        
         books.forEach(book => {
             const option = document.createElement('option');
             option.value = book;
             option.textContent = bookNames.french[book];
+            
+            // Colorer en rouge les livres du Nouveau Testament
+            if (newTestamentBooks.includes(book)) {
+                option.style.color = 'red';
+                option.style.fontWeight = 'bold';
+            }
+            
             linkBookSelect.appendChild(option);
         });
 
@@ -735,6 +820,11 @@ class BibleApp {
             
             this.displayVerses(malagasyVerses, 'malagasy');
             this.displayVerses(frenchVerses, 'french');
+            
+            // Réinitialiser le défilement synchronisé après le chargement
+            setTimeout(() => {
+                this.setupScrollSync();
+            }, 100);
             
         } catch (error) {
             console.error('Erreur lors du chargement des versets:', error);
