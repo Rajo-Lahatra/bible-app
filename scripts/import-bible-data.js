@@ -18,17 +18,11 @@ const SUPABASE_SERVICE_KEY = process.env.VITE_SUPABASE_SERVICE_KEY;
 // Validation des variables d'environnement
 if (!SUPABASE_URL) {
     console.error('❌ VITE_SUPABASE_URL manquant');
-    console.log('💡 Créez un fichier .env avec:');
-    console.log('VITE_SUPABASE_URL=https://votre-projet.supabase.co');
     process.exit(1);
 }
 
 if (!SUPABASE_SERVICE_KEY) {
     console.error('❌ VITE_SUPABASE_SERVICE_KEY manquant');
-    console.log('💡 Obtenez la clé service role dans:');
-    console.log('Supabase > Settings > API > Project API keys');
-    console.log('Et ajoutez-la dans .env:');
-    console.log('VITE_SUPABASE_SERVICE_KEY=votre_clé_service_role');
     process.exit(1);
 }
 
@@ -38,40 +32,29 @@ console.log('Clé:', SUPABASE_SERVICE_KEY.substring(0, 10) + '[...]');
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
 
-// Fonction pour parser et importer la Bible malgache
+// Fonction pour parser et importer la Bible malgache depuis le fichier combiné
 async function importMalagasyBible() {
-    console.log('Début de l importation de la Bible malgache...');
+    console.log('Début de l importation de la Bible malgache combinée...');
     
-    const books = [
-        "Genesisy", "Eksodosy", "Levitikosy", "Nomery", "Deotoronomia", "Josoa", "Mpitsara", "Rota",
-        "I Samoela", "II Samoela", "I Mpanjaka", "II Mpanjaka", "I Tantara", "II Tantara", "Ezra", "Nehemia",
-        "Estera", "Joba", "Salamo", "Ohabolana", "Mpitoriteny", "Tonon-kiran'i Solomona", "Isaia", "Jeremia",
-        "Fitomaniana", "Ezekiela", "Daniela", "Hosea", "Joela", "Amosa", "Obadia", "Jona", "Mika", "Nahoma",
-        "Habakoka", "Zefania", "Hagay", "Zakaria", "Malakia", "Matio", "Marka", "Lioka", "Jaona", 
-        "Asan'ny Apostoly", "Romana", "I Korintiana", "II Korintiana", "Galatiana", "Efesiana", "Filipiana", 
-        "Kolosiana", "I Tesaloniana", "II Tesaloniana", "I Timoty", "II Timoty", "Titosy", "Filemona", 
-        "Hebreo", "Jakoba", "I Petera", "II Petera", "I Jaona", "II Jaona", "III Jaona", "Joda", "Apokalipsy"
-    ];
+    try {
+        // Chemin vers le fichier combiné malgache
+        const filePath = join(__dirname, '../public/data/malagasy-bible/bible-mg.txt');
+        
+        if (!existsSync(filePath)) {
+            throw new Error(`Fichier combiné non trouvé: ${filePath}`);
+        }
 
-    let totalVerses = 0;
+        const text = readFileSync(filePath, 'utf8');
+        const booksData = parseCombinedMalagasyText(text);
+        
+        let totalVerses = 0;
 
-    for (const book of books) {
-        try {
-            // Chemin vers le fichier malgache
-            const filePath = join(__dirname, '../public/data/malagasy-bible', `${book}.txt`);
+        for (const [malagasyBookName, chapters] of Object.entries(booksData)) {
+            console.log(`Traitement du livre: ${malagasyBookName}`);
             
-            if (!existsSync(filePath)) {
-                console.log(`⚠ Fichier non trouvé: ${book}.txt`);
-                continue;
-            }
-
-            const text = readFileSync(filePath, 'utf8');
-            const verses = parseMalagasyText(text, book);
-            
-            // Insérer les versets dans Supabase
-            for (const [chapter, chapterVerses] of Object.entries(verses)) {
-                const verseData = Object.entries(chapterVerses).map(([verse, verseText]) => ({
-                    book,
+            for (const [chapter, verses] of Object.entries(chapters)) {
+                const verseData = Object.entries(verses).map(([verse, verseText]) => ({
+                    book: malagasyBookName,
                     chapter: parseInt(chapter),
                     verse: parseInt(verse),
                     text: verseText
@@ -82,26 +65,98 @@ async function importMalagasyBible() {
                     .upsert(verseData, { onConflict: 'book,chapter,verse' });
 
                 if (error) {
-                    console.error(`Erreur lors de l'import de ${book} chapitre ${chapter}:`, error);
+                    console.error(`Erreur lors de l'import de ${malagasyBookName} chapitre ${chapter}:`, error);
                 } else {
                     totalVerses += verseData.length;
-                    console.log(`✓ ${book} chapitre ${chapter}: ${verseData.length} versets importés`);
+                    console.log(`✓ ${malagasyBookName} chapitre ${chapter}: ${verseData.length} versets importés`);
                 }
             }
-        } catch (error) {
-            console.error(`Erreur avec ${book}:`, error);
         }
-    }
 
-    console.log(`Importation malgache terminée: ${totalVerses} versets`);
+        console.log(`Importation malgache terminée: ${totalVerses} versets`);
+    } catch (error) {
+        console.error('Erreur lors de l importation malgache combinée:', error);
+    }
 }
 
-// Fonction pour parser et importer la Bible française
+// Fonction pour parser le texte malgache combiné
+function parseCombinedMalagasyText(text) {
+    const books = {};
+    const lines = text.split('\n');
+    
+    let currentBook = null;
+    let currentContent = [];
+    
+    for (let i = 0; i < lines.length; i++) {
+        let line = lines[i].trim();
+        
+        // Détection du début d'un nouveau livre (format: "NomDuLivre.txt")
+        const bookMatch = line.match(/^(.+)\.txt$/);
+        if (bookMatch) {
+            // Sauvegarder le livre précédent s'il existe
+            if (currentBook && currentContent.length > 0) {
+                books[currentBook] = parseMalagasyBookContent(currentContent.join('\n'));
+            }
+            
+            // Commencer un nouveau livre
+            currentBook = bookMatch[1];
+            currentContent = [];
+            console.log(`Nouveau livre détecté: ${currentBook}`);
+            continue;
+        }
+        
+        // Ajouter la ligne au contenu du livre courant
+        if (currentBook && line) {
+            currentContent.push(line);
+        }
+    }
+    
+    // Ne pas oublier le dernier livre
+    if (currentBook && currentContent.length > 0) {
+        books[currentBook] = parseMalagasyBookContent(currentContent.join('\n'));
+    }
+    
+    return books;
+}
+
+// Fonction pour parser le contenu d'un livre malgache
+function parseMalagasyBookContent(text) {
+    const chapters = {};
+    const lines = text.split('\n');
+    
+    lines.forEach((line, index) => {
+        line = line.trim();
+        if (!line) return;
+
+        const verseMatch = line.match(/«\s*(.*?)\s*»\s*\(([^)]+)\)/);
+        if (verseMatch) {
+            const verseText = verseMatch[1].trim();
+            const reference = verseMatch[2];
+            
+            const refMatch = reference.match(/(\d+):(\d+)/);
+            if (refMatch) {
+                const chapter = parseInt(refMatch[1]);
+                const verse = parseInt(refMatch[2]);
+                
+                if (!chapters[chapter]) {
+                    chapters[chapter] = {};
+                }
+                
+                if (verseText) {
+                    chapters[chapter][verse] = verseText;
+                }
+            }
+        }
+    });
+
+    return chapters;
+}
+
+// Fonction pour parser et importer la Bible française (inchangée)
 async function importFrenchBible() {
     console.log('Début de l importation de la Bible française...');
     
     try {
-        // Chemin vers le fichier français
         const filePath = join(__dirname, '../public/data/french-bible/bible-fr.txt');
         
         if (!existsSync(filePath)) {
@@ -114,7 +169,6 @@ async function importFrenchBible() {
         let totalVerses = 0;
 
         for (const [frenchBookName, chapters] of Object.entries(booksData)) {
-            // Convertir le nom français en nom malgache
             const malagasyBook = convertFrenchToMalagasyBookName(frenchBookName);
             if (!malagasyBook) {
                 console.log(`Livre non mappé: ${frenchBookName}`);
@@ -148,40 +202,7 @@ async function importFrenchBible() {
     }
 }
 
-// Fonction pour parser le texte malgache
-function parseMalagasyText(text, bookName) {
-    const chapters = {};
-    const lines = text.split('\n');
-    
-    lines.forEach((line, index) => {
-        line = line.trim();
-        if (!line) return;
-
-        const verseMatch = line.match(/«\s*(.*?)\s*»\s*\(([^)]+)\)/);
-        if (verseMatch) {
-            const verseText = verseMatch[1].trim();
-            const reference = verseMatch[2];
-            
-            const refMatch = reference.match(/(\d+):(\d+)/);
-            if (refMatch) {
-                const chapter = parseInt(refMatch[1]);
-                const verse = parseInt(refMatch[2]);
-                
-                if (!chapters[chapter]) {
-                    chapters[chapter] = {};
-                }
-                
-                if (verseText) {
-                    chapters[chapter][verse] = verseText;
-                }
-            }
-        }
-    });
-
-    return chapters;
-}
-
-// Fonction pour parser le texte français
+// Fonction pour parser le texte français (inchangée)
 function parseFrenchBibleText(text) {
     const books = {};
     const lines = text.split('\n');
@@ -195,7 +216,6 @@ function parseFrenchBibleText(text) {
         let line = lines[i].trim();
         if (!line) continue;
 
-        // Détection des livres
         const bookMatch = detectBookName(line);
         if (bookMatch) {
             if (currentBook && currentChapter !== null && currentVerse !== null && currentText) {
@@ -212,7 +232,6 @@ function parseFrenchBibleText(text) {
             continue;
         }
 
-        // Détection des chapitres
         let chapterMatch = line.match(/^Chapitre\s+(\d+)/i);
         if (!chapterMatch) {
             chapterMatch = line.match(/^Psaume\s+(\d+)/i);
@@ -231,7 +250,6 @@ function parseFrenchBibleText(text) {
             continue;
         }
 
-        // Détection des versets
         const verseMatch = line.match(/^(\d+)\s*(¶)?\s*(.*)$/);
         if (verseMatch && currentBook && currentChapter !== null) {
             if (currentVerse !== null && currentText) {
@@ -309,6 +327,11 @@ function convertFrenchToMalagasyBookName(frenchName) {
 async function main() {
     try {
         console.log('🚀 Début de l\'importation des données bibliques...');
+        
+        // Option: Vider les tables existantes avant de réimporter
+        const { error: deleteError } = await supabase.from('malagasy_bible_verses').delete().neq('book', 'dummy');
+        if (deleteError) console.log('Note: Impossible de vider la table existante');
+        
         await importMalagasyBible();
         await importFrenchBible();
         console.log('✅ Importation terminée avec succès !');
