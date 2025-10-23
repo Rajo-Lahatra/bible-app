@@ -1,4 +1,12 @@
-import { initializeApp, setDisplayMode, getDisplayMode } from './bible-data.js';
+import { 
+    initializeApp, 
+    setDisplayMode, 
+    getDisplayMode, 
+    getVerses, 
+    getChapters,
+    books,
+    bookNames 
+} from './bible-data.js';
 import { 
     saveHighlight, 
     saveComment, 
@@ -41,6 +49,9 @@ class BibleApp {
         // Charger les données bibliques
         await initializeApp();
         
+        // Initialiser les sélecteurs de livres
+        await this.initializeBooks();
+        
         // Initialiser les événements
         this.initializeEvents();
         
@@ -48,6 +59,18 @@ class BibleApp {
         if (this.currentUser) {
             await this.loadUserData();
         }
+    }
+
+    async initializeBooks() {
+        const bookSelect = document.getElementById('book-select');
+        bookSelect.innerHTML = '<option value="">Choisir un livre</option>';
+        
+        books.forEach(book => {
+            const option = document.createElement('option');
+            option.value = book;
+            option.textContent = bookNames.french[book];
+            bookSelect.appendChild(option);
+        });
     }
 
     setupAuthListeners() {
@@ -407,21 +430,18 @@ class BibleApp {
         const linkBookSelect = document.getElementById('link-book-select');
         if (!linkBookSelect) return;
 
-        // Utiliser les livres de bible-data.js
-        import('./bible-data.js').then(({ books, bookNames }) => {
-            linkBookSelect.innerHTML = '<option value="">Choisir un livre</option>';
-            
-            books.forEach(book => {
-                const option = document.createElement('option');
-                option.value = book;
-                option.textContent = bookNames.french[book];
-                linkBookSelect.appendChild(option);
-            });
+        linkBookSelect.innerHTML = '<option value="">Choisir un livre</option>';
+        
+        books.forEach(book => {
+            const option = document.createElement('option');
+            option.value = book;
+            option.textContent = bookNames.french[book];
+            linkBookSelect.appendChild(option);
+        });
 
-            // Événement de changement de livre pour les liens
-            linkBookSelect.addEventListener('change', (e) => {
-                this.onLinkBookSelect(e.target.value);
-            });
+        // Événement de changement de livre pour les liens
+        linkBookSelect.addEventListener('change', (e) => {
+            this.onLinkBookSelect(e.target.value);
         });
     }
 
@@ -430,8 +450,7 @@ class BibleApp {
         if (!linkChapterSelect || !book) return;
 
         // Charger les chapitres disponibles pour ce livre
-        import('./bible-data.js').then(({ getChapters }) => {
-            const chapters = getChapters(book, 'french');
+        getChapters(book, 'french').then(chapters => {
             linkChapterSelect.innerHTML = '<option value="">Chapitre</option>';
             
             chapters.forEach(chapter => {
@@ -542,8 +561,9 @@ class BibleApp {
         this.linkedVerses = [];
         
         // Afficher la référence du verset
-        const verseRef = this.getVerseReference(verseId);
-        document.getElementById('current-verse-ref').textContent = verseRef;
+        this.getVerseReference(verseId).then(verseRef => {
+            document.getElementById('current-verse-ref').textContent = verseRef;
+        });
         
         // Vider la liste des versets liés
         document.getElementById('linked-verses-list').innerHTML = '';
@@ -575,8 +595,7 @@ class BibleApp {
         const verseId = `${book}-${chapter}-${verse}`;
         
         // Vérifier si le verset existe
-        import('./bible-data.js').then(({ getVerses, bookNames }) => {
-            const verses = getVerses(book, parseInt(chapter), 'french');
+        getVerses(book, parseInt(chapter), 'french').then(verses => {
             const verseText = verses[parseInt(verse)];
 
             if (!verseText) {
@@ -636,8 +655,7 @@ class BibleApp {
     previewLinkedVerse(verseId) {
         const [book, chapter, verse] = verseId.split('-');
         
-        import('./bible-data.js').then(({ getVerses, bookNames }) => {
-            const verses = getVerses(book, parseInt(chapter), 'french');
+        getVerses(book, parseInt(chapter), 'french').then(verses => {
             const verseText = verses[parseInt(verse)];
 
             if (verseText) {
@@ -651,9 +669,7 @@ class BibleApp {
 
     getVerseReference(verseId) {
         const [book, chapter, verse] = verseId.split('-');
-        return import('./bible-data.js').then(({ bookNames }) => {
-            return `${bookNames.french[book]} ${chapter}:${verse}`;
-        });
+        return Promise.resolve(`${bookNames.french[book]} ${chapter}:${verse}`);
     }
 
     async saveComment() {
@@ -685,14 +701,85 @@ class BibleApp {
     }
 
     async loadChapters(bookId) {
-        // Cette fonction est gérée par bible-data.js
+        if (!bookId) return;
+
+        try {
+            const chapterSelect = document.getElementById('chapter-select');
+            chapterSelect.innerHTML = '<option value="">Chapitre</option>';
+            
+            // Charger les chapitres disponibles pour ce livre
+            const chapters = await getChapters(bookId, 'malagasy');
+            
+            chapters.forEach(chapter => {
+                const option = document.createElement('option');
+                option.value = chapter;
+                option.textContent = `Chapitre ${chapter}`;
+                chapterSelect.appendChild(option);
+            });
+            
+            console.log(`Chargé ${chapters.length} chapitres pour ${bookId}`);
+        } catch (error) {
+            console.error('Erreur lors du chargement des chapitres:', error);
+        }
     }
 
     async loadVerses() {
         if (!this.currentBook || !this.currentChapter) return;
         
-        // Utiliser la fonction de bible-data.js pour charger les versets
-        console.log(`Chargement des versets: ${this.currentBook} chapitre ${this.currentChapter}`);
+        try {
+            console.log(`Chargement des versets: ${this.currentBook} chapitre ${this.currentChapter}`);
+            
+            // Charger les versets malgaches et français depuis Supabase
+            const malagasyVerses = await getVerses(this.currentBook, parseInt(this.currentChapter), 'malagasy');
+            const frenchVerses = await getVerses(this.currentBook, parseInt(this.currentChapter), 'french');
+            
+            this.displayVerses(malagasyVerses, 'malagasy');
+            this.displayVerses(frenchVerses, 'french');
+            
+        } catch (error) {
+            console.error('Erreur lors du chargement des versets:', error);
+            this.showMessage('Erreur lors du chargement des versets', 'error');
+        }
+    }
+
+    displayVerses(verses, language) {
+        const containerId = language === 'malagasy' ? 'malagasy-verses' : 'french-verses';
+        const container = document.getElementById(containerId);
+        
+        if (!container) {
+            console.error('Container non trouvé:', containerId);
+            return;
+        }
+        
+        container.innerHTML = '';
+        
+        if (!verses || Object.keys(verses).length === 0) {
+            container.innerHTML = '<div class="no-verses">Aucun verset disponible</div>';
+            return;
+        }
+        
+        // Trier les numéros de versets
+        const verseNumbers = Object.keys(verses).map(Number).sort((a, b) => a - b);
+        
+        verseNumbers.forEach(verseNum => {
+            const verseElement = document.createElement('div');
+            verseElement.className = 'verse';
+            verseElement.dataset.verseId = `${this.currentBook}-${this.currentChapter}-${verseNum}`;
+            
+            verseElement.innerHTML = `
+                <span class="verse-number">${verseNum}</span>
+                <span class="verse-text">${verses[verseNum] || '[Verset non disponible]'}</span>
+            `;
+            
+            container.appendChild(verseElement);
+        });
+        
+        // Réactiver les outils si nécessaire
+        if (this.activeTool.startsWith('pencil-')) {
+            this.enableHighlighting();
+        } else if (this.activeTool === 'comment') {
+            this.enableCommenting();
+        }
     }
 
     async loadUserData() {
@@ -890,6 +977,9 @@ class BibleApp {
 
     async goToVerse(verseId) {
         const [book, chapter, verse] = verseId.split('-');
+        
+        // Fermer le modal des annotations d'abord
+        document.getElementById('annotations-modal').style.display = 'none';
         
         // Mettre à jour les sélecteurs
         document.getElementById('book-select').value = book;
