@@ -12,98 +12,64 @@
 </head>
 <body>
     <header class="app-header">
-        <!-- Ligne 1 : Compte utilisateur, outils et thème -->
-        <div class="header-row top-row">
-            <div class="user-controls">
-                <div id="user-menu" class="user-menu" style="display: none;">
-                    <span id="user-email" class="user-email"></span>
-                    <button id="my-annotations-btn" class="icon-btn" title="Mes annotations">
-                        <i class="fas fa-highlighter"></i>
-                    </button>
-                    <button id="logout-btn" class="icon-btn" title="Déconnexion">
-                        <i class="fas fa-sign-out-alt"></i>
-                    </button>
-                </div>
-                <div id="auth-buttons" class="auth-buttons">
-                    <button id="login-btn" class="auth-btn">
-                        <i class="fas fa-sign-in-alt"></i> Connexion
-                    </button>
-                    <button id="signup-btn" class="auth-btn">
-                        <i class="fas fa-user-plus"></i> Créer compte
-                    </button>
-                </div>
-            </div>
-
-            <div class="tools-container">
-                <span class="tools-label">Outils:</span>
-                <div class="tools-group">
-                    <button class="tool-btn active" data-tool="pointer" title="Pointeur">
-                        <i class="fas fa-mouse-pointer"></i>
-                    </button>
-                    <button class="tool-btn" data-tool="pencil-blue" title="Surligner en bleu">
-                        <i class="fas fa-pencil-alt" style="color: #3b82f6;"></i>
-                    </button>
-                    <button class="tool-btn" data-tool="pencil-red" title="Surligner en rouge">
-                        <i class="fas fa-pencil-alt" style="color: #ef4444;"></i>
-                    </button>
-                    <button class="tool-btn" data-tool="pencil-green" title="Surligner en vert">
-                        <i class="fas fa-pencil-alt" style="color: #10b981;"></i>
-                    </button>
-                    <button class="tool-btn" data-tool="comment" title="Ajouter un commentaire">
-                        <i class="fas fa-comment"></i>
-                    </button>
-                </div>
-            </div>
-
-            <button id="theme-toggle" class="icon-btn theme-toggle" title="Changer le thème">
-                <i class="fas fa-moon"></i>
-            </button>
-        </div>
-
-        <!-- Ligne 2 : Sélection et affichage -->
-        <div class="header-row bottom-row">
-            <div class="book-selection">
-                <select id="book-select">
-                    <option value="">Choisir un livre</option>
-                </select>
-                <select id="chapter-select">
-                    <option value="">Chapitre</option>
-                </select>
-            </div>
-
+        <div class="header-main-controls">
+            <select id="book-select">
+                <option value="">Choisir un livre</option>
+            </select>
+            <select id="chapter-select">
+                <option value="">Chapitre</option>
+            </select>
+            
+            <!-- Boutons de mode d'affichage -->
             <div class="display-mode-container">
                 <span class="mode-label">Affichage:</span>
-                <div class="display-mode-group">
-                    <button class="display-mode-btn active" data-mode="both" title="Afficher les deux versions">
-                        <i class="fas fa-flag"></i><i class="fas fa-flag" style="margin-left: 2px;"></i>
+                <button class="display-mode-btn active" data-mode="both">Les deux</button>
+                <button class="display-mode-btn" data-mode="malagasy-only">Malgache</button>
+                <button class="display-mode-btn" data-mode="french-only">Français</button>
+            </div>
+            
+            <button id="theme-toggle" class="theme-toggle-btn">🌙</button>
+            
+            <!-- Section d'authentification -->
+            <div class="auth-section">
+                <div id="auth-buttons" class="auth-buttons">
+                    <button id="login-btn" class="auth-btn">Se connecter</button>
+                    <button id="signup-btn" class="auth-btn">Créer un compte</button>
+                </div>
+                <div id="user-menu" class="user-menu" style="display: none;">
+                    <span id="user-email" class="user-email"></span>
+                    <button id="my-annotations-btn" class="auth-btn">
+                        <i class="fas fa-highlighter"></i> Mes annotations
                     </button>
-                    <button class="display-mode-btn" data-mode="malagasy-only" title="Malgache seulement">
-                        Malgache
-                    </button>
-                    <button class="display-mode-btn" data-mode="french-only" title="Français seulement">
-                        Français
+                    <button id="logout-btn" class="auth-btn">
+                        <i class="fas fa-sign-out-alt"></i> Déconnexion
                     </button>
                 </div>
+            </div>
+        </div>
+
+        <!-- Barre d'outils fixe -->
+        <div class="toolbar-fixed">
+            <div class="toolbar-section">
+                <span class="toolbar-label">Outils:</span>
+                <button class="tool-btn active" data-tool="pointer" title="Pointeur">
+                    <i class="fas fa-mouse-pointer"></i> Pointeur
+                </button>
+                <button class="tool-btn" data-tool="pencil-blue" title="Surligner en bleu">
+                    <i class="fas fa-pencil-alt" style="color: #3b82f6;"></i> Bleu
+                </button>
+                <button class="tool-btn" data-tool="pencil-red" title="Surligner en rouge">
+                    <i class="fas fa-pencil-alt" style="color: #ef4444;"></i> Rouge
+                </button>
+                <button class="tool-btn" data-tool="pencil-green" title="Surligner en vert">
+                    <i class="fas fa-pencil-alt" style="color: #10b981;"></i> Vert
+                </button>
+                <button class="tool-btn" data-tool="comment" title="Ajouter un commentaire">
+                    <i class="fas fa-comment"></i> Commentaire
+                </button>
             </div>
         </div>
     </header>
-
-    <!-- Contenu principal de la Bible -->
-    <main class="bible-container">
-        <div class="bible-column" id="malagasy-column">
-            <div class="column-header">
-                <h3>Bible Malgache</h3>
-            </div>
-            <div class="verses-container" id="malagasy-verses"></div>
-        </div>
-
-        <div class="bible-column" id="french-column">
-            <div class="column-header">
-                <h3>Bible Française (LSG)</h3>
-            </div>
-            <div class="verses-container" id="french-verses"></div>
-        </div>
-    </main>
 
     <!-- Modales d'authentification -->
     <div id="auth-modal" class="modal">
@@ -135,6 +101,22 @@
             </div>
         </div>
     </div>
+
+    <main class="bible-container">
+        <div class="bible-column" id="malagasy-column">
+            <div class="column-header">
+                <h3>Bible Malgache</h3>
+            </div>
+            <div class="verses-container" id="malagasy-verses"></div>
+        </div>
+
+        <div class="bible-column" id="french-column">
+            <div class="column-header">
+                <h3>Bible Française (LSG)</h3>
+            </div>
+            <div class="verses-container" id="french-verses"></div>
+        </div>
+    </main>
 
     <!-- Modal de commentaire amélioré -->
     <div id="comment-modal" class="modal">
