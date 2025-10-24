@@ -28,14 +28,16 @@ class BibleApp {
     constructor() {
         this.currentBook = '';
         this.currentChapter = '';
-        this.activeTool = 'pointer'; // 'pointer', 'pencil-blue', 'pencil-red', 'pencil-green', 'comment'
+        this.activeTool = 'pointer';
         this.selectedVerse = null;
         this.supabase = null;
         this.displayMode = 'both';
-        this.linkedVerses = []; // Pour stocker les versets liés
+        this.linkedVerses = [];
         this.currentUser = null;
         this.editingCommentId = null;
-        this.isScrolling = false; // Pour éviter les boucles de défilement
+        this.isScrolling = false;
+        this.isSearching = false;
+        this.searchResults = [];
         
         this.init();
     }
@@ -99,7 +101,6 @@ class BibleApp {
     setupAuthListeners() {
         if (!this.supabase) return;
 
-        // Écouter les changements d'authentification
         this.supabase.auth.onAuthStateChange((event, session) => {
             console.log('Changement d\'état auth:', event, session?.user?.email);
             
@@ -132,12 +133,10 @@ class BibleApp {
         const userEmail = document.getElementById('user-email');
 
         if (this.currentUser) {
-            // Utilisateur connecté
             authButtons.style.display = 'none';
             userMenu.style.display = 'flex';
             userEmail.textContent = this.currentUser.email;
         } else {
-            // Utilisateur non connecté
             authButtons.style.display = 'flex';
             userMenu.style.display = 'none';
         }
@@ -153,10 +152,29 @@ class BibleApp {
             this.onChapterSelect(e.target.value);
         });
 
+        // Recherche
+        document.getElementById('search-btn').addEventListener('click', () => {
+            this.handleSearch();
+        });
+
+        document.getElementById('clear-search').addEventListener('click', () => {
+            this.clearSearch();
+        });
+
+        document.getElementById('search-input').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                this.handleSearch();
+            }
+        });
+
+        // Fermer les résultats de recherche
+        document.getElementById('close-search-results').addEventListener('click', () => {
+            this.closeSearchResults();
+        });
+
         // Outils de crayon et commentaire
         document.querySelectorAll('.tool-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
-                // Utiliser currentTarget pour toujours cibler le bouton
                 const button = e.currentTarget;
                 const tool = button.dataset.tool;
                 this.setActiveTool(tool);
@@ -190,7 +208,7 @@ class BibleApp {
             this.signOut();
         });
 
-        // Nouveau bouton "Mes annotations"
+        // Bouton "Mes annotations"
         document.getElementById('my-annotations-btn').addEventListener('click', () => {
             this.openAnnotationsModal();
         });
@@ -206,32 +224,211 @@ class BibleApp {
         
         // Modal d'édition de commentaire
         this.initializeEditCommentModal();
+        
+        // Modal de résultats de recherche
+        this.initializeSearchResultsModal();
     }
 
+    // NOUVELLE MÉTHODE : Gestion de la recherche
+    async handleSearch() {
+        const query = document.getElementById('search-input').value.trim();
+        const language = document.getElementById('search-language').value;
+
+        if (!query) {
+            this.showMessage('Veuillez entrer un terme de recherche', 'error');
+            return;
+        }
+
+        this.isSearching = true;
+        document.getElementById('search-btn').disabled = true;
+        document.getElementById('search-btn').textContent = '⏳';
+
+        try {
+            this.searchResults = await this.performSearch(query, language);
+            this.displaySearchResults(query, language);
+        } catch (error) {
+            console.error('Erreur lors de la recherche:', error);
+            this.showMessage('Erreur lors de la recherche', 'error');
+        } finally {
+            document.getElementById('search-btn').disabled = false;
+            document.getElementById('search-btn').textContent = '🔍';
+        }
+    }
+
+    async performSearch(query, language) {
+        const results = [];
+        const searchTerms = query.toLowerCase().split(' ').filter(term => term.length > 0);
+
+        // Rechercher dans tous les livres et chapitres
+        for (const book of books) {
+            const chapters = await getChapters(book, 'malagasy');
+            
+            for (const chapter of chapters) {
+                // Charger les versets selon la langue choisie
+                if (language === 'malagasy' || language === 'both') {
+                    const malagasyVerses = await getVerses(book, chapter, 'malagasy');
+                    this.searchInVerses(malagasyVerses, book, chapter, 'malagasy', searchTerms, results);
+                }
+                
+                if (language === 'french' || language === 'both') {
+                    const frenchVerses = await getVerses(book, chapter, 'french');
+                    this.searchInVerses(frenchVerses, book, chapter, 'french', searchTerms, results);
+                }
+            }
+        }
+
+        return results;
+    }
+
+    searchInVerses(verses, book, chapter, language, searchTerms, results) {
+        Object.entries(verses).forEach(([verseNumber, verseText]) => {
+            const lowerVerseText = verseText.toLowerCase();
+            let matchesAllTerms = true;
+
+            // Vérifier si tous les termes de recherche sont présents
+            for (const term of searchTerms) {
+                if (!lowerVerseText.includes(term)) {
+                    matchesAllTerms = false;
+                    break;
+                }
+            }
+
+            if (matchesAllTerms) {
+                results.push({
+                    book,
+                    chapter,
+                    verse: verseNumber,
+                    language,
+                    text: verseText,
+                    reference: `${bookNames.french[book]} ${chapter}:${verseNumber}`
+                });
+            }
+        });
+    }
+
+    displaySearchResults(query, language) {
+        const modal = document.getElementById('search-results-modal');
+        const resultsList = document.getElementById('search-results-list');
+        const resultsCount = document.getElementById('search-results-count');
+
+        resultsCount.textContent = `${this.searchResults.length} résultat(s) trouvé(s) pour "${query}"`;
+
+        if (this.searchResults.length === 0) {
+            resultsList.innerHTML = '<div class="no-results">Aucun résultat trouvé</div>';
+        } else {
+            resultsList.innerHTML = '';
+            
+            this.searchResults.forEach(result => {
+                const resultItem = document.createElement('div');
+                resultItem.className = 'search-result-item';
+                resultItem.dataset.book = result.book;
+                resultItem.dataset.chapter = result.chapter;
+                resultItem.dataset.verse = result.verse;
+                resultItem.dataset.language = result.language;
+
+                // Mettre en évidence les termes de recherche
+                let highlightedText = result.text;
+                const searchTerms = query.toLowerCase().split(' ').filter(term => term.length > 0);
+                
+                searchTerms.forEach(term => {
+                    const regex = new RegExp(term, 'gi');
+                    highlightedText = highlightedText.replace(regex, 
+                        match => `<span class="search-highlight">${match}</span>`
+                    );
+                });
+
+                resultItem.innerHTML = `
+                    <div class="search-result-reference">
+                        ${result.reference} (${result.language === 'malagasy' ? 'Malgache' : 'Français'})
+                    </div>
+                    <div class="search-result-text">${highlightedText}</div>
+                `;
+
+                resultItem.addEventListener('click', () => {
+                    this.goToSearchResult(result);
+                });
+
+                resultsList.appendChild(resultItem);
+            });
+        }
+
+        modal.style.display = 'block';
+        document.getElementById('clear-search').style.display = 'inline-block';
+    }
+
+    goToSearchResult(result) {
+        this.closeSearchResults();
+        
+        // Mettre à jour les sélecteurs
+        document.getElementById('book-select').value = result.book;
+        this.onBookSelect(result.book).then(() => {
+            document.getElementById('chapter-select').value = result.chapter;
+            this.onChapterSelect(result.chapter).then(() => {
+                // Faire défiler jusqu'au verset
+                setTimeout(() => {
+                    const verseElement = document.querySelector(
+                        `[data-verse-id="${result.book}-${result.chapter}-${result.verse}"]`
+                    );
+                    if (verseElement) {
+                        verseElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        verseElement.style.backgroundColor = 'var(--hover-color)';
+                        setTimeout(() => {
+                            verseElement.style.backgroundColor = '';
+                        }, 2000);
+                    }
+                }, 500);
+            });
+        });
+    }
+
+    clearSearch() {
+        document.getElementById('search-input').value = '';
+        document.getElementById('clear-search').style.display = 'none';
+        this.closeSearchResults();
+        this.isSearching = false;
+        this.searchResults = [];
+    }
+
+    closeSearchResults() {
+        document.getElementById('search-results-modal').style.display = 'none';
+    }
+
+    initializeSearchResultsModal() {
+        const modal = document.getElementById('search-results-modal');
+        const closeBtn = modal.querySelector('.close');
+
+        closeBtn.addEventListener('click', () => {
+            this.closeSearchResults();
+        });
+
+        window.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                this.closeSearchResults();
+            }
+        });
+    }
+
+    // Les autres méthodes restent inchangées...
     initializeAuthModal() {
         const authModal = document.getElementById('auth-modal');
         const authForm = document.getElementById('auth-form');
         const authSwitchBtn = document.getElementById('auth-switch-btn');
         const closeBtn = authModal.querySelector('.close');
 
-        // Fermeture
         closeBtn.addEventListener('click', () => {
             authModal.style.display = 'none';
         });
 
-        // Switch entre connexion/inscription
         authSwitchBtn.addEventListener('click', () => {
             const isLogin = authSwitchBtn.textContent === 'Créer un compte';
             this.openAuthModal(isLogin ? 'signup' : 'login');
         });
 
-        // Soumission du formulaire
         authForm.addEventListener('submit', (e) => {
             e.preventDefault();
             this.handleAuthSubmit();
         });
 
-        // Fermer en cliquant à l'extérieur
         window.addEventListener('click', (e) => {
             if (e.target === authModal) {
                 authModal.style.display = 'none';
@@ -244,29 +441,24 @@ class BibleApp {
         const closeBtn = modal.querySelector('.close');
         const tabs = document.querySelectorAll('.annotation-tab');
 
-        // Fermeture
         closeBtn.addEventListener('click', () => {
             modal.style.display = 'none';
         });
 
-        // Navigation par onglets
         tabs.forEach(tab => {
             tab.addEventListener('click', () => {
                 const tabName = tab.dataset.tab;
                 
-                // Désactiver tous les onglets
                 tabs.forEach(t => t.classList.remove('active'));
                 document.querySelectorAll('.annotation-tab-content').forEach(content => {
                     content.classList.remove('active');
                 });
                 
-                // Activer l'onglet sélectionné
                 tab.classList.add('active');
                 document.getElementById(`${tabName}-tab`).classList.add('active');
             });
         });
 
-        // Fermer en cliquant à l'extérieur
         window.addEventListener('click', (e) => {
             if (e.target === modal) {
                 modal.style.display = 'none';
@@ -309,7 +501,6 @@ class BibleApp {
         const authForm = document.getElementById('auth-form');
         const errorDiv = document.getElementById('auth-error');
 
-        // Cacher les erreurs
         errorDiv.style.display = 'none';
 
         if (mode === 'login') {
@@ -322,11 +513,9 @@ class BibleApp {
             authSwitchBtn.textContent = 'Se connecter';
         }
 
-        // Réinitialiser le formulaire
         authForm.reset();
         authModal.style.display = 'block';
         
-        // Stocker le mode actuel
         authModal.dataset.mode = mode;
     }
 
@@ -338,7 +527,6 @@ class BibleApp {
         const submitBtn = document.getElementById('auth-submit-btn');
         const mode = authModal.dataset.mode;
 
-        // Cacher les erreurs précédentes
         errorDiv.style.display = 'none';
         submitBtn.disabled = true;
         submitBtn.textContent = mode === 'login' ? 'Connexion...' : 'Création...';
@@ -374,7 +562,6 @@ class BibleApp {
     }
 
     showMessage(message, type = 'info') {
-        // Créer une notification temporaire
         const notification = document.createElement('div');
         notification.className = `notification notification-${type}`;
         notification.textContent = message;
@@ -407,7 +594,6 @@ class BibleApp {
     }
 
     clearUserData() {
-        // Retirer les surlignages et commentaires de l'interface
         document.querySelectorAll('.verse').forEach(verse => {
             verse.classList.remove('highlighted-blue', 'highlighted-red', 'highlighted-green');
             const commentDiv = verse.querySelector('.verse-comment');
@@ -418,14 +604,12 @@ class BibleApp {
     }
 
     initializeCommentModal() {
-        // Fermeture des modals
         document.querySelectorAll('.close').forEach(closeBtn => {
             closeBtn.addEventListener('click', (e) => {
                 e.target.closest('.modal').style.display = 'none';
             });
         });
 
-        // Sauvegarde du commentaire
         document.getElementById('save-comment').addEventListener('click', () => {
             this.saveComment();
         });
@@ -434,15 +618,12 @@ class BibleApp {
             this.closeCommentModal();
         });
 
-        // Ajout de liens versets
         document.getElementById('add-verse-link').addEventListener('click', () => {
             this.addVerseLink();
         });
 
-        // Initialiser les sélecteurs de livres pour les liens
         this.initializeLinkSelects();
 
-        // Fermer les modals en cliquant à l'extérieur
         window.addEventListener('click', (e) => {
             if (e.target.classList.contains('modal')) {
                 e.target.style.display = 'none';
@@ -451,13 +632,11 @@ class BibleApp {
     }
 
     initializeLinkSelects() {
-        // Remplir le sélecteur de livres pour les liens
         const linkBookSelect = document.getElementById('link-book-select');
         if (!linkBookSelect) return;
 
         linkBookSelect.innerHTML = '<option value="">Choisir un livre</option>';
         
-        // Liste des livres du Nouveau Testament (identique à celle utilisée dans initializeBooks)
         const newTestamentBooks = [
             'MAT', 'MRK', 'LUK', 'JHN', 'ACT', 'ROM', '1CO', '2CO', 'GAL', 'EPH', 
             'PHP', 'COL', '1TH', '2TH', '1TI', '2TI', 'TIT', 'PHM', 'HEB', 'JAS', 
@@ -469,7 +648,6 @@ class BibleApp {
             option.value = book;
             option.textContent = bookNames.french[book];
             
-            // Colorer en rouge les livres du Nouveau Testament
             if (newTestamentBooks.includes(book)) {
                 option.style.color = 'red';
                 option.style.fontWeight = 'bold';
@@ -478,7 +656,6 @@ class BibleApp {
             linkBookSelect.appendChild(option);
         });
 
-        // Événement de changement de livre pour les liens
         linkBookSelect.addEventListener('change', (e) => {
             this.onLinkBookSelect(e.target.value);
         });
@@ -488,7 +665,6 @@ class BibleApp {
         const linkChapterSelect = document.getElementById('link-chapter-select');
         if (!linkChapterSelect || !book) return;
 
-        // Charger les chapitres disponibles pour ce livre
         getChapters(book, 'french').then(chapters => {
             linkChapterSelect.innerHTML = '<option value="">Chapitre</option>';
             
@@ -502,18 +678,15 @@ class BibleApp {
     }
 
     setActiveTool(tool) {
-        // Vérifier que tool est défini
         if (!tool) {
             console.error('Tool is undefined');
             return;
         }
 
-        // Désactiver tous les outils
         document.querySelectorAll('.tool-btn').forEach(btn => {
             btn.classList.remove('active');
         });
 
-        // Activer le nouvel outil
         const activeBtn = document.querySelector(`[data-tool="${tool}"]`);
         if (activeBtn) {
             activeBtn.classList.add('active');
@@ -533,7 +706,6 @@ class BibleApp {
     enableHighlighting() {
         document.querySelectorAll('.verse').forEach(verse => {
             verse.style.cursor = 'pointer';
-            // Supprimer d'abord les écouteurs existants pour éviter les doublons
             verse.removeEventListener('click', this.handleVerseClick.bind(this));
             verse.addEventListener('click', this.handleVerseClick.bind(this));
         });
@@ -549,7 +721,6 @@ class BibleApp {
     enableCommenting() {
         document.querySelectorAll('.verse').forEach(verse => {
             verse.style.cursor = 'pointer';
-            // Supprimer d'abord les écouteurs existants pour éviter les doublons
             verse.removeEventListener('click', this.handleVerseClick.bind(this));
             verse.addEventListener('click', this.handleVerseClick.bind(this));
         });
@@ -569,16 +740,13 @@ class BibleApp {
     }
 
     async toggleHighlight(verseId, verseElement) {
-        const color = this.activeTool.split('-')[1]; // Extraire la couleur
+        const color = this.activeTool.split('-')[1];
         
-        // Retirer toutes les classes de highlight existantes
         verseElement.classList.remove('highlighted-blue', 'highlighted-red', 'highlighted-green');
         
-        // Si le verset a déjà cette couleur, le désactiver
         if (verseElement.classList.contains(`highlighted-${color}`)) {
             verseElement.classList.remove(`highlighted-${color}`);
         } else {
-            // Sinon, appliquer la nouvelle couleur
             verseElement.classList.add(`highlighted-${color}`);
         }
 
@@ -589,7 +757,6 @@ class BibleApp {
     }
 
     openCommentModal(verseId, verseElement) {
-        // Vérifier si l'utilisateur est connecté
         if (!this.currentUser) {
             this.showMessage('Veuillez vous connecter pour ajouter un commentaire', 'error');
             this.openAuthModal('login');
@@ -599,15 +766,12 @@ class BibleApp {
         this.selectedVerse = verseId;
         this.linkedVerses = [];
         
-        // Afficher la référence du verset
         this.getVerseReference(verseId).then(verseRef => {
             document.getElementById('current-verse-ref').textContent = verseRef;
         });
         
-        // Vider la liste des versets liés
         document.getElementById('linked-verses-list').innerHTML = '';
         
-        // Réinitialiser les sélecteurs
         document.getElementById('link-book-select').value = '';
         document.getElementById('link-chapter-select').innerHTML = '<option value="">Chapitre</option>';
         document.getElementById('link-verse-input').value = '';
@@ -633,7 +797,6 @@ class BibleApp {
 
         const verseId = `${book}-${chapter}-${verse}`;
         
-        // Vérifier si le verset existe
         getVerses(book, parseInt(chapter), 'french').then(verses => {
             const verseText = verses[parseInt(verse)];
 
@@ -642,7 +805,6 @@ class BibleApp {
                 return;
             }
 
-            // Ajouter à la liste
             this.linkedVerses.push({
                 verseId: verseId,
                 book: book,
@@ -653,7 +815,6 @@ class BibleApp {
 
             this.updateLinkedVersesList();
             
-            // Réinitialiser les champs
             document.getElementById('link-verse-input').value = '';
         });
     }
@@ -675,14 +836,12 @@ class BibleApp {
                 <button type="button" class="remove-verse-link" data-index="${index}">×</button>
             `;
 
-            // Événement pour supprimer le lien
             verseItem.querySelector('.remove-verse-link').addEventListener('click', (e) => {
                 const index = parseInt(e.target.dataset.index);
                 this.linkedVerses.splice(index, 1);
                 this.updateLinkedVersesList();
             });
 
-            // Événement pour prévisualiser le verset
             verseItem.querySelector('.linked-verse-text').addEventListener('click', () => {
                 this.previewLinkedVerse(linkedVerse.verseId);
             });
@@ -724,7 +883,7 @@ class BibleApp {
             
             await saveComment(this.supabase, this.selectedVerse, commentText, linkedVersesIds);
             this.closeCommentModal();
-            await this.loadUserData(); // Recharger les commentaires
+            await this.loadUserData();
         }
     }
 
@@ -746,7 +905,6 @@ class BibleApp {
             const chapterSelect = document.getElementById('chapter-select');
             chapterSelect.innerHTML = '<option value="">Chapitre</option>';
             
-            // Charger les chapitres disponibles pour ce livre
             const chapters = await getChapters(bookId, 'malagasy');
             
             chapters.forEach(chapter => {
@@ -768,14 +926,12 @@ class BibleApp {
         try {
             console.log(`Chargement des versets: ${this.currentBook} chapitre ${this.currentChapter}`);
             
-            // Charger les versets malgaches et français depuis Supabase
             const malagasyVerses = await getVerses(this.currentBook, parseInt(this.currentChapter), 'malagasy');
             const frenchVerses = await getVerses(this.currentBook, parseInt(this.currentChapter), 'french');
             
             this.displayVerses(malagasyVerses, 'malagasy');
             this.displayVerses(frenchVerses, 'french');
             
-            // METTRE À JOUR LES EN-TÊTES AVEC LE LIVRE ET CHAPITRE
             updateColumnHeaders(this.currentBook, this.currentChapter);
             
         } catch (error) {
@@ -800,7 +956,6 @@ class BibleApp {
             return;
         }
         
-        // Trier les numéros de versets
         const verseNumbers = Object.keys(verses).map(Number).sort((a, b) => a - b);
         
         verseNumbers.forEach(verseNum => {
@@ -816,7 +971,6 @@ class BibleApp {
             container.appendChild(verseElement);
         });
         
-        // Réactiver les outils si nécessaire
         if (this.activeTool.startsWith('pencil-')) {
             this.enableHighlighting();
         } else if (this.activeTool === 'comment') {
@@ -832,7 +986,6 @@ class BibleApp {
     }
 
     displayUserData(userData) {
-        // Afficher les surlignages
         if (userData.highlights) {
             userData.highlights.forEach(highlight => {
                 const verseElement = document.querySelector(`[data-verse-id="${highlight.verse_id}"]`);
@@ -842,7 +995,6 @@ class BibleApp {
             });
         }
 
-        // Afficher les commentaires
         if (userData.comments) {
             userData.comments.forEach(comment => {
                 this.displayComment(comment);
@@ -860,10 +1012,8 @@ class BibleApp {
                 verseElement.appendChild(commentDiv);
             }
             
-            // Afficher le commentaire avec les liens versets
             let commentHTML = comment.content;
             
-            // Traiter les versets liés
             if (comment.linked_verse) {
                 const linkedVerses = comment.linked_verse.split(';');
                 linkedVerses.forEach(verseId => {
@@ -875,7 +1025,6 @@ class BibleApp {
             
             commentDiv.innerHTML = commentHTML;
             
-            // Ajouter les événements pour les liens
             commentDiv.querySelectorAll('.verse-link').forEach(link => {
                 link.addEventListener('click', (e) => {
                     const verseId = e.target.dataset.verseId;
@@ -890,11 +1039,8 @@ class BibleApp {
         const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
         document.documentElement.setAttribute('data-theme', newTheme);
         
-        // Sauvegarder la préférence
         localStorage.setItem('theme', newTheme);
     }
-
-    // MÉTHODES POUR LA GESTION DES ANNOTATIONS
 
     async openAnnotationsModal() {
         if (!this.currentUser) {
@@ -941,13 +1087,11 @@ class BibleApp {
                 </div>
             `;
 
-            // Aller au verset
             highlightItem.querySelector('.goto-verse').addEventListener('click', () => {
                 this.goToVerse(highlight.verse_id);
                 document.getElementById('annotations-modal').style.display = 'none';
             });
 
-            // Supprimer le surlignage
             highlightItem.querySelector('.remove-highlight').addEventListener('click', async () => {
                 if (confirm('Voulez-vous vraiment supprimer ce surlignage ?')) {
                     await this.removeHighlight(highlight.id, highlight.verse_id);
@@ -971,7 +1115,6 @@ class BibleApp {
             const commentItem = document.createElement('div');
             commentItem.className = 'annotation-item';
             
-            // Limiter la longueur du commentaire pour l'affichage
             const shortContent = comment.content.length > 100 
                 ? comment.content.substring(0, 100) + '...' 
                 : comment.content;
@@ -990,18 +1133,15 @@ class BibleApp {
                 </div>
             `;
 
-            // Aller au verset
             commentItem.querySelector('.goto-verse').addEventListener('click', () => {
                 this.goToVerse(comment.verse_id);
                 document.getElementById('annotations-modal').style.display = 'none';
             });
 
-            // Modifier le commentaire
             commentItem.querySelector('.edit-comment').addEventListener('click', () => {
                 this.openEditCommentModal(comment);
             });
 
-            // Supprimer le commentaire
             commentItem.querySelector('.remove-comment').addEventListener('click', async () => {
                 if (confirm('Voulez-vous vraiment supprimer ce commentaire ?')) {
                     await this.removeComment(comment.id);
@@ -1020,17 +1160,14 @@ class BibleApp {
     async goToVerse(verseId) {
         const [book, chapter, verse] = verseId.split('-');
         
-        // Fermer le modal des annotations d'abord
         document.getElementById('annotations-modal').style.display = 'none';
         
-        // Mettre à jour les sélecteurs
         document.getElementById('book-select').value = book;
         await this.onBookSelect(book);
         
         document.getElementById('chapter-select').value = chapter;
         await this.onChapterSelect(chapter);
         
-        // Faire défiler jusqu'au verset
         setTimeout(() => {
             const verseElement = document.querySelector(`[data-verse-id="${verseId}"]`);
             if (verseElement) {
@@ -1065,7 +1202,7 @@ class BibleApp {
             await updateComment(this.supabase, this.editingCommentId, newContent);
             this.showMessage('Commentaire mis à jour avec succès', 'success');
             document.getElementById('edit-comment-modal').style.display = 'none';
-            await this.loadAnnotationsData(); // Recharger les données
+            await this.loadAnnotationsData();
         } catch (error) {
             console.error('Erreur lors de la mise à jour du commentaire:', error);
             this.showMessage('Erreur lors de la mise à jour du commentaire', 'error');
@@ -1081,8 +1218,8 @@ class BibleApp {
             await deleteComment(this.supabase, this.editingCommentId);
             this.showMessage('Commentaire supprimé avec succès', 'success');
             document.getElementById('edit-comment-modal').style.display = 'none';
-            await this.loadAnnotationsData(); // Recharger les données
-            await this.loadUserData(); // Mettre à jour l'affichage dans la Bible
+            await this.loadAnnotationsData();
+            await this.loadUserData();
         } catch (error) {
             console.error('Erreur lors de la suppression du commentaire:', error);
             this.showMessage('Erreur lors de la suppression du commentaire', 'error');
@@ -1094,13 +1231,12 @@ class BibleApp {
             await deleteHighlight(this.supabase, highlightId);
             this.showMessage('Surlignage supprimé avec succès', 'success');
             
-            // Mettre à jour l'affichage dans la Bible
             const verseElement = document.querySelector(`[data-verse-id="${verseId}"]`);
             if (verseElement) {
                 verseElement.classList.remove('highlighted-blue', 'highlighted-red', 'highlighted-green');
             }
             
-            await this.loadAnnotationsData(); // Recharger les données
+            await this.loadAnnotationsData();
         } catch (error) {
             console.error('Erreur lors de la suppression du surlignage:', error);
             this.showMessage('Erreur lors de la suppression du surlignage', 'error');
@@ -1112,7 +1248,6 @@ class BibleApp {
             await deleteComment(this.supabase, commentId);
             this.showMessage('Commentaire supprimé avec succès', 'success');
             
-            // Mettre à jour l'affichage dans la Bible
             const commentElements = document.querySelectorAll('.verse-comment');
             commentElements.forEach(element => {
                 if (element.textContent.includes(commentId)) {
@@ -1120,8 +1255,8 @@ class BibleApp {
                 }
             });
             
-            await this.loadAnnotationsData(); // Recharger les données
-            await this.loadUserData(); // Recharger les données utilisateur
+            await this.loadAnnotationsData();
+            await this.loadUserData();
         } catch (error) {
             console.error('Erreur lors de la suppression du commentaire:', error);
             this.showMessage('Erreur lors de la suppression du commentaire', 'error');
