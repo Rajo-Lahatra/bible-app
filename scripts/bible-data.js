@@ -227,7 +227,7 @@ export const bookNames = {
         'Nehemia': 'Néhémie',
         'Estera': 'Esther',
         'Joba': 'Job',
-        'Salamo': 'Psaumes',
+        'Salamo': 'Psaume',
         'Ohabolana': 'Proverbes',
         'Mpitoriteny': 'Ecclésiaste',
         'Tonon-kiran\'i Solomona': 'Cantique des Cantiques',
