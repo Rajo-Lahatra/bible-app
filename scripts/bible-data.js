@@ -395,3 +395,52 @@ export function getCurrentBook() {
 export function getCurrentChapter() {
     return currentChapter;
 }
+// Fonction pour recherche utilisant Supabase
+export async function searchVerses(query, language = 'both') {
+    if (!supabase) {
+        await initializeApp();
+    }
+
+    try {
+        const searchTerms = query.toLowerCase().split(' ').filter(term => term.length > 0);
+        let results = [];
+
+        // Recherche dans chaque langue selon la sélection
+        if (language === 'malagasy' || language === 'both') {
+            const { data: malagasyData, error: malagasyError } = await supabase
+                .from('malagasy_bible_verses')
+                .select('book, chapter, verse, text')
+                .textSearch('text', searchTerms.join(' & '));
+
+            if (!malagasyError && malagasyData) {
+                results = results.concat(malagasyData.map(verse => ({
+                    ...verse,
+                    language: 'malagasy',
+                    reference: `${bookNames.french[verse.book]} ${verse.chapter}:${verse.verse}`
+                })));
+            }
+        }
+
+        if (language === 'french' || language === 'both') {
+            const { data: frenchData, error: frenchError } = await supabase
+                .from('french_bible_verses')
+                .select('book, chapter, verse, text')
+                .textSearch('text', searchTerms.join(' & '));
+
+            if (!frenchError && frenchData) {
+                results = results.concat(frenchData.map(verse => ({
+                    ...verse,
+                    language: 'french',
+                    reference: `${bookNames.french[verse.book]} ${verse.chapter}:${verse.verse}`
+                })));
+            }
+        }
+
+        console.log(`✅ Recherche terminée: ${results.length} résultats pour "${query}"`);
+        return results;
+
+    } catch (error) {
+        console.error('Erreur lors de la recherche:', error);
+        return [];
+    }
+}
