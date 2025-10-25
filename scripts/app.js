@@ -36,8 +36,6 @@ class BibleApp {
         this.currentUser = null;
         this.editingCommentId = null;
         this.isScrolling = false;
-        this.isSearching = false;
-        this.searchResults = [];
         
         this.init();
     }
@@ -150,6 +148,7 @@ class BibleApp {
 
     openBookSelectionModal() {
         document.getElementById('book-selection-modal').style.display = 'block';
+        document.body.style.overflow = 'hidden'; // Empêcher le scroll du body
     }
 
     openChapterSelectionModal(book) {
@@ -160,14 +159,17 @@ class BibleApp {
         title.textContent = `Sélectionner un chapitre - ${bookName}`;
         
         document.getElementById('chapter-selection-modal').style.display = 'block';
+        document.body.style.overflow = 'hidden'; // Empêcher le scroll du body
     }
 
     closeBookSelectionModal() {
         document.getElementById('book-selection-modal').style.display = 'none';
+        document.body.style.overflow = 'auto'; // Rétablir le scroll du body
     }
 
     closeChapterSelectionModal() {
         document.getElementById('chapter-selection-modal').style.display = 'none';
+        document.body.style.overflow = 'auto'; // Rétablir le scroll du body
     }
 
     async renderChapters(book) {
@@ -263,6 +265,7 @@ class BibleApp {
             closeBtn.addEventListener('click', (e) => {
                 const modal = e.target.closest('.modal');
                 modal.style.display = 'none';
+                document.body.style.overflow = 'auto'; // Rétablir le scroll du body
             });
         });
 
@@ -273,24 +276,6 @@ class BibleApp {
             if (e.target.id === 'chapter-selection-modal') {
                 this.closeChapterSelectionModal();
             }
-        });
-
-        document.getElementById('search-btn').addEventListener('click', () => {
-            this.handleSearch();
-        });
-
-        document.getElementById('clear-search').addEventListener('click', () => {
-            this.clearSearch();
-        });
-
-        document.getElementById('search-input').addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
-                this.handleSearch();
-            }
-        });
-
-        document.getElementById('close-search-results').addEventListener('click', () => {
-            this.closeSearchResults();
         });
 
         document.querySelectorAll('.tool-btn').forEach(btn => {
@@ -334,177 +319,6 @@ class BibleApp {
         this.initializeAuthModal();
         this.initializeAnnotationsModal();
         this.initializeEditCommentModal();
-        this.initializeSearchResultsModal();
-    }
-
-    async handleSearch() {
-        const query = document.getElementById('search-input').value.trim();
-        const language = document.getElementById('search-language').value;
-
-        if (!query) {
-            this.showMessage('Veuillez entrer un terme de recherche', 'error');
-            return;
-        }
-
-        this.isSearching = true;
-        document.getElementById('search-btn').disabled = true;
-        document.getElementById('search-btn').textContent = '⏳';
-
-        try {
-            this.searchResults = await this.performSearch(query, language);
-            this.displaySearchResults(query, language);
-        } catch (error) {
-            console.error('Erreur lors de la recherche:', error);
-            this.showMessage('Erreur lors de la recherche', 'error');
-        } finally {
-            document.getElementById('search-btn').disabled = false;
-            document.getElementById('search-btn').textContent = '🔍';
-        }
-    }
-
-    async performSearch(query, language) {
-        const results = [];
-        const searchTerms = query.toLowerCase().split(' ').filter(term => term.length > 0);
-
-        for (const book of books) {
-            const chapters = await getChapters(book, 'malagasy');
-            
-            for (const chapter of chapters) {
-                if (language === 'malagasy' || language === 'both') {
-                    const malagasyVerses = await getVerses(book, chapter, 'malagasy');
-                    this.searchInVerses(malagasyVerses, book, chapter, 'malagasy', searchTerms, results);
-                }
-                
-                if (language === 'french' || language === 'both') {
-                    const frenchVerses = await getVerses(book, chapter, 'french');
-                    this.searchInVerses(frenchVerses, book, chapter, 'french', searchTerms, results);
-                }
-            }
-        }
-
-        return results;
-    }
-
-    searchInVerses(verses, book, chapter, language, searchTerms, results) {
-        Object.entries(verses).forEach(([verseNumber, verseText]) => {
-            const lowerVerseText = verseText.toLowerCase();
-            let matchesAllTerms = true;
-
-            for (const term of searchTerms) {
-                if (!lowerVerseText.includes(term)) {
-                    matchesAllTerms = false;
-                    break;
-                }
-            }
-
-            if (matchesAllTerms) {
-                results.push({
-                    book,
-                    chapter,
-                    verse: verseNumber,
-                    language,
-                    text: verseText,
-                    reference: `${bookNames.french[book]} ${chapter}:${verseNumber}`
-                });
-            }
-        });
-    }
-
-    displaySearchResults(query, language) {
-        const modal = document.getElementById('search-results-modal');
-        const resultsList = document.getElementById('search-results-list');
-        const resultsCount = document.getElementById('search-results-count');
-
-        resultsCount.textContent = `${this.searchResults.length} résultat(s) trouvé(s) pour "${query}"`;
-
-        if (this.searchResults.length === 0) {
-            resultsList.innerHTML = '<div class="no-results">Aucun résultat trouvé</div>';
-        } else {
-            resultsList.innerHTML = '';
-            
-            this.searchResults.forEach(result => {
-                const resultItem = document.createElement('div');
-                resultItem.className = 'search-result-item';
-                resultItem.dataset.book = result.book;
-                resultItem.dataset.chapter = result.chapter;
-                resultItem.dataset.verse = result.verse;
-                resultItem.dataset.language = result.language;
-
-                let highlightedText = result.text;
-                const searchTerms = query.toLowerCase().split(' ').filter(term => term.length > 0);
-                
-                searchTerms.forEach(term => {
-                    const regex = new RegExp(term, 'gi');
-                    highlightedText = highlightedText.replace(regex, 
-                        match => `<span class="search-highlight">${match}</span>`
-                    );
-                });
-
-                resultItem.innerHTML = `
-                    <div class="search-result-reference">
-                        ${result.reference} (${result.language === 'malagasy' ? 'Malgache' : 'Français'})
-                    </div>
-                    <div class="search-result-text">${highlightedText}</div>
-                `;
-
-                resultItem.addEventListener('click', () => {
-                    this.goToSearchResult(result);
-                });
-
-                resultsList.appendChild(resultItem);
-            });
-        }
-
-        modal.style.display = 'block';
-        document.getElementById('clear-search').style.display = 'inline-block';
-    }
-
-    goToSearchResult(result) {
-        this.closeSearchResults();
-        
-        this.onBookSelect(result.book).then(() => {
-            this.onChapterSelect(result.chapter).then(() => {
-                setTimeout(() => {
-                    const verseElement = document.querySelector(
-                        `[data-verse-id="${result.book}-${result.chapter}-${result.verse}"]`
-                    );
-                    if (verseElement) {
-                        verseElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                        verseElement.style.backgroundColor = 'var(--hover-color)';
-                        setTimeout(() => {
-                            verseElement.style.backgroundColor = '';
-                        }, 2000);
-                    }
-                }, 500);
-            });
-        });
-    }
-
-    clearSearch() {
-        document.getElementById('search-input').value = '';
-        document.getElementById('clear-search').style.display = 'none';
-        this.closeSearchResults();
-        this.isSearching = false;
-        this.searchResults = [];
-    }
-
-    closeSearchResults() {
-        document.getElementById('search-results-modal').style.display = 'none';
-    }
-
-    initializeSearchResultsModal() {
-        const modal = document.getElementById('search-results-modal');
-        const closeBtn = modal.querySelector('.close');
-
-        closeBtn.addEventListener('click', () => {
-            this.closeSearchResults();
-        });
-
-        window.addEventListener('click', (e) => {
-            if (e.target === modal) {
-                this.closeSearchResults();
-            }
-        });
     }
 
     initializeAuthModal() {
@@ -515,6 +329,7 @@ class BibleApp {
 
         closeBtn.addEventListener('click', () => {
             authModal.style.display = 'none';
+            document.body.style.overflow = 'auto';
         });
 
         authSwitchBtn.addEventListener('click', () => {
@@ -530,6 +345,7 @@ class BibleApp {
         window.addEventListener('click', (e) => {
             if (e.target === authModal) {
                 authModal.style.display = 'none';
+                document.body.style.overflow = 'auto';
             }
         });
     }
@@ -541,6 +357,7 @@ class BibleApp {
 
         closeBtn.addEventListener('click', () => {
             modal.style.display = 'none';
+            document.body.style.overflow = 'auto';
         });
 
         tabs.forEach(tab => {
@@ -560,6 +377,7 @@ class BibleApp {
         window.addEventListener('click', (e) => {
             if (e.target === modal) {
                 modal.style.display = 'none';
+                document.body.style.overflow = 'auto';
             }
         });
     }
@@ -570,6 +388,7 @@ class BibleApp {
 
         closeBtn.addEventListener('click', () => {
             modal.style.display = 'none';
+            document.body.style.overflow = 'auto';
         });
 
         document.getElementById('update-comment').addEventListener('click', () => {
@@ -582,11 +401,13 @@ class BibleApp {
 
         document.getElementById('cancel-edit').addEventListener('click', () => {
             modal.style.display = 'none';
+            document.body.style.overflow = 'auto';
         });
 
         window.addEventListener('click', (e) => {
             if (e.target === modal) {
                 modal.style.display = 'none';
+                document.body.style.overflow = 'auto';
             }
         });
     }
@@ -613,6 +434,7 @@ class BibleApp {
 
         authForm.reset();
         authModal.style.display = 'block';
+        document.body.style.overflow = 'hidden';
         
         authModal.dataset.mode = mode;
     }
@@ -639,6 +461,7 @@ class BibleApp {
             }
             
             authModal.style.display = 'none';
+            document.body.style.overflow = 'auto';
         } catch (error) {
             console.error('Erreur auth:', error);
             errorDiv.textContent = error.message;
@@ -705,6 +528,7 @@ class BibleApp {
         document.querySelectorAll('.close').forEach(closeBtn => {
             closeBtn.addEventListener('click', (e) => {
                 e.target.closest('.modal').style.display = 'none';
+                document.body.style.overflow = 'auto';
             });
         });
 
@@ -725,6 +549,7 @@ class BibleApp {
         window.addEventListener('click', (e) => {
             if (e.target.classList.contains('modal')) {
                 e.target.style.display = 'none';
+                document.body.style.overflow = 'auto';
             }
         });
     }
@@ -875,10 +700,12 @@ class BibleApp {
         document.getElementById('link-verse-input').value = '';
         
         document.getElementById('comment-modal').style.display = 'block';
+        document.body.style.overflow = 'hidden';
     }
 
     closeCommentModal() {
         document.getElementById('comment-modal').style.display = 'none';
+        document.body.style.overflow = 'auto';
         this.selectedVerse = null;
         this.linkedVerses = [];
     }
@@ -959,6 +786,7 @@ class BibleApp {
                     `${bookNames.french[book]} ${chapter}:${verse}`;
                 document.getElementById('preview-verse-content').textContent = verseText;
                 document.getElementById('verse-preview-modal').style.display = 'block';
+                document.body.style.overflow = 'hidden';
             }
         });
     }
@@ -1116,6 +944,7 @@ class BibleApp {
 
         await this.loadAnnotationsData();
         document.getElementById('annotations-modal').style.display = 'block';
+        document.body.style.overflow = 'hidden';
     }
 
     async loadAnnotationsData() {
@@ -1155,6 +984,7 @@ class BibleApp {
             highlightItem.querySelector('.goto-verse').addEventListener('click', () => {
                 this.goToVerse(highlight.verse_id);
                 document.getElementById('annotations-modal').style.display = 'none';
+                document.body.style.overflow = 'auto';
             });
 
             highlightItem.querySelector('.remove-highlight').addEventListener('click', async () => {
@@ -1201,6 +1031,7 @@ class BibleApp {
             commentItem.querySelector('.goto-verse').addEventListener('click', () => {
                 this.goToVerse(comment.verse_id);
                 document.getElementById('annotations-modal').style.display = 'none';
+                document.body.style.overflow = 'auto';
             });
 
             commentItem.querySelector('.edit-comment').addEventListener('click', () => {
@@ -1226,6 +1057,7 @@ class BibleApp {
         const [book, chapter, verse] = verseId.split('-');
         
         document.getElementById('annotations-modal').style.display = 'none';
+        document.body.style.overflow = 'auto';
         
         await this.onBookSelect(book);
         await this.onChapterSelect(chapter);
@@ -1264,6 +1096,7 @@ class BibleApp {
             await updateComment(this.supabase, this.editingCommentId, newContent);
             this.showMessage('Commentaire mis à jour avec succès', 'success');
             document.getElementById('edit-comment-modal').style.display = 'none';
+            document.body.style.overflow = 'auto';
             await this.loadAnnotationsData();
         } catch (error) {
             console.error('Erreur lors de la mise à jour du commentaire:', error);
@@ -1280,6 +1113,7 @@ class BibleApp {
             await deleteComment(this.supabase, this.editingCommentId);
             this.showMessage('Commentaire supprimé avec succès', 'success');
             document.getElementById('edit-comment-modal').style.display = 'none';
+            document.body.style.overflow = 'auto';
             await this.loadAnnotationsData();
             await this.loadUserData();
         } catch (error) {
