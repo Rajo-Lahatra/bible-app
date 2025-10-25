@@ -154,16 +154,21 @@ export function initHomilyGenerator(appInstance) {
 
 class HomilyGeneratorUI {
     constructor() {
+        // Initialiser this.state d'abord
         this.state = {
             lang: "mg",
             pericopeRef: "",
             pericopeSummary: "",
-            truths: [this.emptyTruth(1), this.emptyTruth(2)],
+            truths: [],
             conclusionNotes: "",
         };
         
         this.currentVerseTarget = null;
         this.currentTruthIndex = null;
+        
+        // Maintenant initialiser les truths après que this.state soit défini
+        this.state.truths = [this.emptyTruth(1), this.emptyTruth(2)];
+        
         this.initUI();
     }
 
