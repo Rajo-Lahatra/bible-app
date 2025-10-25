@@ -10,6 +10,16 @@
 <body>
     <header class="app-header">
         <div class="header-main-controls">
+            <!-- Bouton pour ouvrir la sélection des livres -->
+            <button id="open-book-selection" class="selection-btn">
+                📖 Sélectionner un livre
+            </button>
+            
+            <!-- Affichage du livre et chapitre actuel -->
+            <div class="current-selection">
+                <span id="current-book-display">Genèse 1</span>
+            </div>
+
             <!-- Barre de recherche -->
             <div class="search-container">
                 <input type="text" id="search-input" placeholder="Rechercher un verset...">
@@ -46,37 +56,6 @@
             </div>
         </div>
 
-        <!-- Nouvelle section de sélection des livres et chapitres -->
-        <div class="selection-container">
-            <!-- Sélection des livres -->
-            <div class="book-selection-section">
-                <div class="selection-header">
-                    <h3>Sélectionner un livre</h3>
-                    <div class="testament-filters">
-                        <button class="testament-filter active" data-testament="all">Tous</button>
-                        <button class="testament-filter" data-testament="old">Ancien Testament</button>
-                        <button class="testament-filter" data-testament="new">Nouveau Testament</button>
-                    </div>
-                </div>
-                
-                <div class="books-grid" id="books-grid">
-                    <!-- Les boutons des livres seront générés ici -->
-                </div>
-            </div>
-
-            <!-- Sélection des chapitres -->
-            <div class="chapter-selection-section" id="chapter-selection" style="display: none;">
-                <div class="selection-header">
-                    <h3 id="chapter-selection-title">Sélectionner un chapitre</h3>
-                    <button class="back-to-books-btn">← Retour aux livres</button>
-                </div>
-                
-                <div class="chapters-grid" id="chapters-grid">
-                    <!-- Les boutons des chapitres seront générés ici -->
-                </div>
-            </div>
-        </div>
-
         <!-- Barre d'outils fixe -->
         <div class="toolbar-fixed">
             <div class="toolbar-section">
@@ -99,6 +78,36 @@
             </div>
         </div>
     </header>
+
+    <!-- Modal de sélection des livres -->
+    <div id="book-selection-modal" class="modal">
+        <div class="modal-content selection-modal-content">
+            <span class="close">&times;</span>
+            <h3>Sélectionner un livre</h3>
+            
+            <div class="testament-filters">
+                <button class="testament-filter active" data-testament="all">Tous</button>
+                <button class="testament-filter" data-testament="old">Ancien Testament</button>
+                <button class="testament-filter" data-testament="new">Nouveau Testament</button>
+            </div>
+            
+            <div class="books-grid" id="books-grid">
+                <!-- Les boutons des livres seront générés ici -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de sélection des chapitres -->
+    <div id="chapter-selection-modal" class="modal">
+        <div class="modal-content selection-modal-content">
+            <span class="close">&times;</span>
+            <h3 id="chapter-selection-title">Sélectionner un chapitre</h3>
+            
+            <div class="chapters-grid" id="chapters-grid">
+                <!-- Les boutons des chapitres seront générés ici -->
+            </div>
+        </div>
+    </div>
 
     <!-- Modales d'authentification -->
     <div id="auth-modal" class="modal">
@@ -238,7 +247,8 @@
             </div>
         </div>
     </div>
-    <!-- Nouvelle modal pour les résultats de recherche -->
+
+    <!-- Modal pour les résultats de recherche -->
     <div id="search-results-modal" class="modal" style="display: none;">
         <div class="modal-content search-results-content">
             <span class="close">&times;</span>
@@ -250,6 +260,7 @@
             </div>
         </div>
     </div>
+
     <script type="module" src="scripts/app.js"></script>
 </body>
 </html>

@@ -26,8 +26,8 @@ import {
 
 class BibleApp {
     constructor() {
-        this.currentBook = '';
-        this.currentChapter = '';
+        this.currentBook = 'Genesisy';
+        this.currentChapter = '1';
         this.activeTool = 'pointer';
         this.selectedVerse = null;
         this.supabase = null;
@@ -61,6 +61,9 @@ class BibleApp {
         // Initialiser les événements
         this.initializeEvents();
         
+        // Charger Genèse 1 par défaut
+        await this.loadDefaultBook();
+        
         // Charger les données utilisateur si connecté
         if (this.currentUser) {
             await this.loadUserData();
@@ -72,7 +75,19 @@ class BibleApp {
         this.displayMode = savedMode;
     }
 
-    // NOUVELLES MÉTHODES POUR LA SÉLECTION PAR BOUTONS
+    async loadDefaultBook() {
+        await this.loadVerses();
+        this.updateCurrentSelectionDisplay();
+    }
+
+    updateCurrentSelectionDisplay() {
+        const displayElement = document.getElementById('current-book-display');
+        if (displayElement && this.currentBook && this.currentChapter) {
+            const bookName = bookNames.french[this.currentBook] || this.currentBook;
+            displayElement.textContent = `${bookName} ${this.currentChapter}`;
+        }
+    }
+
     initializeBookSelection() {
         this.renderBooks();
         this.setupBookSelectionEvents();
@@ -84,9 +99,8 @@ class BibleApp {
 
         booksGrid.innerHTML = '';
 
-        // Définir les livres de l'ancien et nouveau testament
-        const oldTestamentBooks = books.slice(0, 39); // Genèse à Malachie
-        const newTestamentBooks = books.slice(39); // Matthieu à Apocalypse
+        const oldTestamentBooks = books.slice(0, 39);
+        const newTestamentBooks = books.slice(39);
 
         let booksToRender = [];
         
@@ -103,7 +117,6 @@ class BibleApp {
             bookBtn.className = `book-btn ${books.indexOf(book) < 39 ? 'old-testament' : 'new-testament'}`;
             bookBtn.dataset.book = book;
 
-            // Adapter l'affichage selon le mode
             if (this.displayMode === 'malagasy-only') {
                 bookBtn.innerHTML = `<div class="book-name-single">${bookNames.malagasy[book]}</div>`;
             } else if (this.displayMode === 'french-only') {
@@ -126,7 +139,6 @@ class BibleApp {
     }
 
     setupBookSelectionEvents() {
-        // Filtres par testament
         document.querySelectorAll('.testament-filter').forEach(filter => {
             filter.addEventListener('click', (e) => {
                 document.querySelectorAll('.testament-filter').forEach(f => f.classList.remove('active'));
@@ -134,28 +146,28 @@ class BibleApp {
                 this.renderBooks(e.target.dataset.testament);
             });
         });
-
-        // Bouton retour aux livres
-        document.querySelector('.back-to-books-btn').addEventListener('click', () => {
-            this.showBookSelection();
-        });
     }
 
-    showBookSelection() {
-        document.querySelector('.book-selection-section').style.display = 'block';
-        document.getElementById('chapter-selection').style.display = 'none';
+    openBookSelectionModal() {
+        document.getElementById('book-selection-modal').style.display = 'block';
     }
 
-    showChapterSelection(book) {
-        document.querySelector('.book-selection-section').style.display = 'none';
-        document.getElementById('chapter-selection').style.display = 'block';
-        
-        // Mettre à jour le titre
+    openChapterSelectionModal(book) {
         const title = document.getElementById('chapter-selection-title');
         const bookName = this.displayMode === 'malagasy-only' ? 
             bookNames.malagasy[book] : 
             bookNames.french[book];
         title.textContent = `Sélectionner un chapitre - ${bookName}`;
+        
+        document.getElementById('chapter-selection-modal').style.display = 'block';
+    }
+
+    closeBookSelectionModal() {
+        document.getElementById('book-selection-modal').style.display = 'none';
+    }
+
+    closeChapterSelectionModal() {
+        document.getElementById('chapter-selection-modal').style.display = 'none';
     }
 
     async renderChapters(book) {
@@ -186,14 +198,16 @@ class BibleApp {
 
     async onBookSelect(book) {
         this.currentBook = book;
-        this.showChapterSelection(book);
         await this.renderChapters(book);
+        this.closeBookSelectionModal();
+        this.openChapterSelectionModal(book);
     }
 
     async onChapterSelect(chapter) {
         this.currentChapter = chapter;
+        this.closeChapterSelectionModal();
         await this.loadVerses();
-        this.showBookSelection(); // Revenir à la sélection des livres après choix
+        this.updateCurrentSelectionDisplay();
     }
 
     setupAuthListeners() {
@@ -241,7 +255,26 @@ class BibleApp {
     }
 
     initializeEvents() {
-        // Recherche
+        document.getElementById('open-book-selection').addEventListener('click', () => {
+            this.openBookSelectionModal();
+        });
+
+        document.querySelectorAll('#book-selection-modal .close, #chapter-selection-modal .close').forEach(closeBtn => {
+            closeBtn.addEventListener('click', (e) => {
+                const modal = e.target.closest('.modal');
+                modal.style.display = 'none';
+            });
+        });
+
+        window.addEventListener('click', (e) => {
+            if (e.target.id === 'book-selection-modal') {
+                this.closeBookSelectionModal();
+            }
+            if (e.target.id === 'chapter-selection-modal') {
+                this.closeChapterSelectionModal();
+            }
+        });
+
         document.getElementById('search-btn').addEventListener('click', () => {
             this.handleSearch();
         });
@@ -256,12 +289,10 @@ class BibleApp {
             }
         });
 
-        // Fermer les résultats de recherche
         document.getElementById('close-search-results').addEventListener('click', () => {
             this.closeSearchResults();
         });
 
-        // Outils de crayon et commentaire
         document.querySelectorAll('.tool-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 const button = e.currentTarget;
@@ -270,23 +301,19 @@ class BibleApp {
             });
         });
 
-        // Mode d'affichage
         document.querySelectorAll('.display-mode-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 const mode = e.target.dataset.mode;
                 setDisplayMode(mode);
                 this.displayMode = mode;
-                // Re-rendre les livres avec le nouveau mode d'affichage
                 this.renderBooks();
             });
         });
 
-        // Thème
         document.getElementById('theme-toggle').addEventListener('click', () => {
             this.toggleTheme();
         });
 
-        // Authentification
         document.getElementById('login-btn').addEventListener('click', () => {
             this.openAuthModal('login');
         });
@@ -299,28 +326,17 @@ class BibleApp {
             this.signOut();
         });
 
-        // Bouton "Mes annotations"
         document.getElementById('my-annotations-btn').addEventListener('click', () => {
             this.openAnnotationsModal();
         });
 
-        // Modal de commentaire
         this.initializeCommentModal();
-        
-        // Modal d'authentification
         this.initializeAuthModal();
-        
-        // Modal d'annotations
         this.initializeAnnotationsModal();
-        
-        // Modal d'édition de commentaire
         this.initializeEditCommentModal();
-        
-        // Modal de résultats de recherche
         this.initializeSearchResultsModal();
     }
 
-    // Gestion de la recherche
     async handleSearch() {
         const query = document.getElementById('search-input').value.trim();
         const language = document.getElementById('search-language').value;
@@ -350,12 +366,10 @@ class BibleApp {
         const results = [];
         const searchTerms = query.toLowerCase().split(' ').filter(term => term.length > 0);
 
-        // Rechercher dans tous les livres et chapitres
         for (const book of books) {
             const chapters = await getChapters(book, 'malagasy');
             
             for (const chapter of chapters) {
-                // Charger les versets selon la langue choisie
                 if (language === 'malagasy' || language === 'both') {
                     const malagasyVerses = await getVerses(book, chapter, 'malagasy');
                     this.searchInVerses(malagasyVerses, book, chapter, 'malagasy', searchTerms, results);
@@ -376,7 +390,6 @@ class BibleApp {
             const lowerVerseText = verseText.toLowerCase();
             let matchesAllTerms = true;
 
-            // Vérifier si tous les termes de recherche sont présents
             for (const term of searchTerms) {
                 if (!lowerVerseText.includes(term)) {
                     matchesAllTerms = false;
@@ -417,7 +430,6 @@ class BibleApp {
                 resultItem.dataset.verse = result.verse;
                 resultItem.dataset.language = result.language;
 
-                // Mettre en évidence les termes de recherche
                 let highlightedText = result.text;
                 const searchTerms = query.toLowerCase().split(' ').filter(term => term.length > 0);
                 
@@ -450,10 +462,8 @@ class BibleApp {
     goToSearchResult(result) {
         this.closeSearchResults();
         
-        // Utiliser la nouvelle interface de sélection
         this.onBookSelect(result.book).then(() => {
             this.onChapterSelect(result.chapter).then(() => {
-                // Faire défiler jusqu'au verset
                 setTimeout(() => {
                     const verseElement = document.querySelector(
                         `[data-verse-id="${result.book}-${result.chapter}-${result.verse}"]`
@@ -1217,7 +1227,6 @@ class BibleApp {
         
         document.getElementById('annotations-modal').style.display = 'none';
         
-        // Utiliser la nouvelle interface de sélection
         await this.onBookSelect(book);
         await this.onChapterSelect(chapter);
         
