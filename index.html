@@ -48,6 +48,7 @@
                 <div id="user-menu" class="user-menu" style="display: none;">
                     <span id="user-email" class="user-email"></span>
                     <button id="my-annotations-btn" class="auth-btn">Mes annotations</button>
+                    <button id="show-homily-tool" class="auth-btn">📝 Préparer une homélie</button>
                     <button id="logout-btn" class="auth-btn">Déconnexion</button>
                 </div>
             </div>
@@ -242,6 +243,14 @@
                 <button id="delete-comment" class="btn-danger">Supprimer</button>
                 <button id="cancel-edit" class="btn-secondary">Annuler</button>
             </div>
+        </div>
+    </div>
+
+    <!-- Modal pour l'outil d'homélie -->
+    <div id="homily-section" class="modal">
+        <div class="modal-content" style="max-width: 95vw; max-height: 95vh; width: 95vw; height: 95vh;">
+            <span class="close">&times;</span>
+            <div id="homily-generator"></div>
         </div>
     </div>
 

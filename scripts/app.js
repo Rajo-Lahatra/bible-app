@@ -23,6 +23,7 @@ import {
     updateComment,
     deleteHighlight
 } from './supabase-client.js';
+import { initHomilyGenerator } from './homily-generator.js';
 
 class BibleApp {
     constructor() {
@@ -374,6 +375,24 @@ class BibleApp {
             this.nextChapter();
         });
 
+        // Outil de préparation d'homélie
+        document.getElementById('show-homily-tool').addEventListener('click', () => {
+            this.openHomilyTool();
+        });
+
+        // Fermeture de la modale homélie
+        document.querySelector('#homily-section .close').addEventListener('click', () => {
+            document.getElementById('homily-section').style.display = 'none';
+            document.body.style.overflow = 'auto';
+        });
+
+        window.addEventListener('click', (e) => {
+            if (e.target.id === 'homily-section') {
+                document.getElementById('homily-section').style.display = 'none';
+                document.body.style.overflow = 'auto';
+            }
+        });
+
         this.initializeCommentModal();
         this.initializeAuthModal();
         this.initializeAnnotationsModal();
@@ -539,6 +558,20 @@ class BibleApp {
             console.error('Erreur déconnexion:', error);
             this.showMessage('Erreur lors de la déconnexion', 'error');
         }
+    }
+
+    openHomilyTool() {
+        if (!this.currentUser) {
+            this.showMessage('Veuillez vous connecter pour utiliser l\'outil d\'homélie', 'error');
+            this.openAuthModal('login');
+            return;
+        }
+        
+        document.getElementById('homily-section').style.display = 'block';
+        document.body.style.overflow = 'hidden';
+        
+        // Initialiser le générateur d'homélie
+        initHomilyGenerator(this);
     }
 
     showMessage(message, type = 'info') {
