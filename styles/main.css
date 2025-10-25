@@ -817,17 +817,47 @@ textarea, input[type="text"] {
     padding: 0.5rem;
 }
 
+/* Modale de sélection des chapitres - Taille normale */
 .chapters-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(70px, 1fr));
-    gap: 0.4rem;
+    grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+    gap: 0.5rem;
     flex: 1;
     overflow-y: auto;
     padding: 0.5rem;
 }
 
-.book-btn,
 .chapter-btn {
+    padding: 0.75rem 0.5rem;
+    border: 1px solid var(--border-color);
+    background: var(--bg-color);
+    color: var(--text-color);
+    border-radius: 6px;
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.2s ease;
+    font-size: 0.9rem;
+    height: auto;
+    min-height: auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 500;
+}
+
+.chapter-btn:hover {
+    background: var(--hover-color);
+    border-color: var(--secondary-color);
+    transform: translateY(-1px);
+}
+
+.chapter-btn.active {
+    background: var(--secondary-color);
+    color: white;
+    border-color: var(--secondary-color);
+}
+
+.book-btn {
     padding: 0.6rem 0.4rem;
     border: 1px solid var(--border-color);
     background: var(--bg-color);
@@ -843,20 +873,13 @@ textarea, input[type="text"] {
     justify-content: center;
 }
 
-.chapter-btn {
-    min-height: 45px;
-    padding: 0.5rem 0.3rem;
-}
-
-.book-btn:hover,
-.chapter-btn:hover {
+.book-btn:hover {
     background: var(--hover-color);
     border-color: var(--secondary-color);
     transform: translateY(-2px);
 }
 
-.book-btn.active,
-.chapter-btn.active {
+.book-btn.active {
     background: var(--secondary-color);
     color: white;
     border-color: var(--secondary-color);
@@ -972,15 +995,23 @@ textarea, input[type="text"] {
         font-size: 0.9rem;
     }
 
-    .books-grid,
-    .chapters-grid {
+    .books-grid {
         grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
         gap: 0.5rem;
     }
     
-    .book-btn,
-    .chapter-btn {
+    .book-btn {
         padding: 0.75rem;
+        font-size: 0.85rem;
+    }
+
+    .chapters-grid {
+        grid-template-columns: repeat(auto-fill, minmax(70px, 1fr));
+        gap: 0.4rem;
+    }
+    
+    .chapter-btn {
+        padding: 0.6rem 0.4rem;
         font-size: 0.85rem;
     }
     
@@ -1024,8 +1055,7 @@ textarea, input[type="text"] {
         min-width: auto;
     }
 
-    .books-grid,
-    .chapters-grid {
+    .books-grid {
         grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
     }
     
@@ -1033,7 +1063,17 @@ textarea, input[type="text"] {
     .book-name-bilingual .book-name-french {
         font-size: 0.75rem;
     }
+
+    .chapters-grid {
+        grid-template-columns: repeat(auto-fill, minmax(65px, 1fr));
+    }
+    
+    .chapter-btn {
+        padding: 0.5rem 0.3rem;
+        font-size: 0.8rem;
+    }
 }
+
 /* Styles pour les différents modes d'affichage */
 .bible-container.both-columns {
     display: flex;
@@ -1102,68 +1142,4 @@ textarea, input[type="text"] {
 #search-btn:hover, #clear-search:hover {
     background: var(--hover-color);
     border-color: var(--secondary-color);
-}
-
-/* Styles pour les résultats de recherche */
-.search-results-content {
-    max-width: 800px;
-    max-height: 80vh;
-}
-
-.search-results-count {
-    margin-bottom: 1rem;
-    padding: 0.75rem;
-    background: var(--hover-color);
-    border-radius: 6px;
-    font-weight: 500;
-}
-
-.search-results-list {
-    max-height: 400px;
-    overflow-y: auto;
-    border: 1px solid var(--border-color);
-    border-radius: 6px;
-    padding: 0.5rem;
-}
-
-.search-result-item {
-    padding: 0.75rem;
-    border-bottom: 1px solid var(--border-color);
-    cursor: pointer;
-    transition: background-color 0.2s ease;
-}
-
-.search-result-item:hover {
-    background-color: var(--hover-color);
-}
-
-.search-result-item:last-child {
-    border-bottom: none;
-}
-
-.search-result-reference {
-    font-weight: bold;
-    color: var(--secondary-color);
-    margin-bottom: 0.25rem;
-}
-
-.search-result-text {
-    color: var(--text-color);
-    line-height: 1.4;
-}
-
-.search-highlight {
-    background-color: yellow;
-    color: black;
-    padding: 0.1rem 0.2rem;
-    border-radius: 3px;
-    font-weight: bold;
-}
-
-.no-results {
-    text-align: center;
-    padding: 2rem;
-    color: var(--text-color);
-    opacity: 0.7;
-    font-style: italic;
 }
