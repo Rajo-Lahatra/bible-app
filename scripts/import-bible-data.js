@@ -276,7 +276,7 @@ function detectBookName(line) {
     const bookNames = [
         "Genèse", "Exode", "Lévitique", "Nombres", "Deutéronome", "Josué", "Juges", "Ruth",
         "1 Samuel", "2 Samuel", "1 Rois", "2 Rois", "1 Chroniques", "2 Chroniques", "Esdras", "Néhémie",
-        "Esther", "Job", "Psaumes", "Proverbes", "Ecclésiaste", "Cantique des Cantiques", "Ésaïe", "Jérémie",
+        "Esther", "Job", "Psaume", "Proverbes", "Ecclésiaste", "Cantique des Cantiques", "Ésaïe", "Jérémie",
         "Lamentations", "Ézéchiel", "Daniel", "Osée", "Joël", "Amos", "Abdias", "Jonas", "Michée", "Nahum",
         "Habacuc", "Sophonie", "Aggée", "Zacharie", "Malachie", "Matthieu", "Marc", "Luc", "Jean", 
         "Actes", "Romains", "1 Corinthiens", "2 Corinthiens", "Galates", "Éphésiens", "Philippiens", 
@@ -305,7 +305,7 @@ function convertFrenchToMalagasyBookName(frenchName) {
         "Deutéronome": "Deotoronomia", "Josué": "Josoa", "Juges": "Mpitsara", "Ruth": "Rota",
         "1 Samuel": "I Samoela", "2 Samuel": "II Samoela", "1 Rois": "I Mpanjaka", "2 Rois": "II Mpanjaka",
         "1 Chroniques": "I Tantara", "2 Chroniques": "II Tantara", "Esdras": "Ezra", "Néhémie": "Nehemia",
-        "Esther": "Estera", "Job": "Joba", "Psaumes": "Salamo", "Proverbes": "Ohabolana",
+        "Esther": "Estera", "Job": "Joba", "Psaume": "Salamo", "Proverbes": "Ohabolana",
         "Ecclésiaste": "Mpitoriteny", "Cantique des Cantiques": "Tonon-kiran'i Solomona",
         "Ésaïe": "Isaia", "Jérémie": "Jeremia", "Lamentations": "Fitomaniana", "Ézéchiel": "Ezekiela",
         "Daniel": "Daniela", "Osée": "Hosea", "Joël": "Joela", "Amos": "Amosa", "Abdias": "Obadia",
