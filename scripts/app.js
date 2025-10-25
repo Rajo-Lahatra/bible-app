@@ -327,6 +327,10 @@ class BibleApp {
             if (e.target.id === 'chapter-selection-modal') {
                 this.closeChapterSelectionModal();
             }
+            if (e.target.id === 'homily-section') {
+                document.getElementById('homily-section').style.display = 'none';
+                document.body.style.overflow = 'auto';
+            }
         });
 
         document.querySelectorAll('.tool-btn').forEach(btn => {
@@ -386,17 +390,42 @@ class BibleApp {
             document.body.style.overflow = 'auto';
         });
 
-        window.addEventListener('click', (e) => {
-            if (e.target.id === 'homily-section') {
-                document.getElementById('homily-section').style.display = 'none';
-                document.body.style.overflow = 'auto';
-            }
-        });
-
         this.initializeCommentModal();
         this.initializeAuthModal();
         this.initializeAnnotationsModal();
         this.initializeEditCommentModal();
+    }
+
+    openHomilyTool() {
+        if (!this.currentUser) {
+            this.showMessage('Veuillez vous connecter pour utiliser l\'outil d\'homélie', 'error');
+            this.openAuthModal('login');
+            return;
+        }
+        
+        // S'assurer que le conteneur homily-generator existe
+        const homilyContainer = document.getElementById('homily-generator');
+        if (!homilyContainer) {
+            console.error('Conteneur homily-generator non trouvé');
+            return;
+        }
+        
+        // Réinitialiser le conteneur
+        homilyContainer.innerHTML = '';
+        
+        // Afficher la modale
+        document.getElementById('homily-section').style.display = 'block';
+        document.body.style.overflow = 'hidden';
+        
+        // Initialiser le générateur d'homélie avec un délai pour s'assurer que le DOM est prêt
+        setTimeout(() => {
+            try {
+                initHomilyGenerator(this);
+            } catch (error) {
+                console.error('Erreur lors de l\'initialisation de l\'outil homélie:', error);
+                this.showMessage('Erreur lors du chargement de l\'outil homélie', 'error');
+            }
+        }, 100);
     }
 
     initializeAuthModal() {
@@ -558,20 +587,6 @@ class BibleApp {
             console.error('Erreur déconnexion:', error);
             this.showMessage('Erreur lors de la déconnexion', 'error');
         }
-    }
-
-    openHomilyTool() {
-        if (!this.currentUser) {
-            this.showMessage('Veuillez vous connecter pour utiliser l\'outil d\'homélie', 'error');
-            this.openAuthModal('login');
-            return;
-        }
-        
-        document.getElementById('homily-section').style.display = 'block';
-        document.body.style.overflow = 'hidden';
-        
-        // Initialiser le générateur d'homélie
-        initHomilyGenerator(this);
     }
 
     showMessage(message, type = 'info') {
