@@ -2,7 +2,7 @@ import { bookNames, getVerses } from './bible-data.js';
 
 let bibleAppInstance = null;
 
-// Dictionnaire bilingue - Déplacé AVANT les classes
+// Définition de TDICT comme variable globale du module
 const TDICT = {
     mg: {
         uiTitle: "Générateur de plan d'homélie (Toriteny)",
@@ -45,7 +45,7 @@ const TDICT = {
         lblVerses: "Andininy (référence(s))",
         phVerses: "Oh: Zak. 8:1-8 / Mat. 5:3-10",
         lblExplain: "Fanazavana (40%)",
-        phExplain: "Eto, ry havana, dia hitantsika fa ... (konteksta, teny loham-pahamarinana, sary ... )",
+        phExplain: "Eto, ry havana, dia hitantsika fa ... (konteksta, teny loham-fahamarinana, sary ... )",
         lblApp: (d) => `Fampiharana – ${d} (50%)`,
         phD1: "D1 (oh: izaho/ankohonana/asa…)",
         phD2: "D2",
@@ -137,19 +137,19 @@ const TDICT = {
 
 export function initHomilyGenerator(appInstance) {
     bibleAppInstance = appInstance;
-    HomilyGenerator.init();
-}
-
-class HomilyGenerator {
-    static init() {
-        const homilyContainer = document.getElementById('homily-generator');
-        if (!homilyContainer) return;
-
-        if (homilyContainer.dataset.initialized) return;
-        homilyContainer.dataset.initialized = 'true';
-
-        new HomilyGeneratorUI();
+    
+    // Vérifier que le conteneur existe
+    const homilyContainer = document.getElementById('homily-generator');
+    if (!homilyContainer) {
+        console.error('Conteneur homily-generator non trouvé');
+        return;
     }
+    
+    // Réinitialiser le conteneur
+    homilyContainer.innerHTML = '';
+    
+    // Créer une instance de l'interface homélie
+    new HomilyGeneratorUI();
 }
 
 class HomilyGeneratorUI {
@@ -163,7 +163,13 @@ class HomilyGeneratorUI {
         };
         
         this.currentVerseTarget = null;
+        this.currentTruthIndex = null;
         this.initUI();
+    }
+
+    // Méthode pour obtenir les traductions
+    T() {
+        return TDICT[this.state.lang] || TDICT.mg;
     }
 
     emptyTruth(i = 1) {
@@ -182,16 +188,20 @@ class HomilyGeneratorUI {
         };
     }
 
-    T() {
-        return TDICT[this.state.lang];
-    }
-
     initUI() {
         const homilyContainer = document.getElementById('homily-generator');
-        homilyContainer.innerHTML = this.getTemplate();
-        
-        this.bindEvents();
-        this.rerenderTruths();
+        if (!homilyContainer) {
+            console.error('Conteneur homily-generator non trouvé lors de l\'initialisation');
+            return;
+        }
+
+        try {
+            homilyContainer.innerHTML = this.getTemplate();
+            this.bindEvents();
+            this.rerenderTruths();
+        } catch (error) {
+            console.error('Erreur lors de l\'initialisation de l\'UI homélie:', error);
+        }
     }
 
     getTemplate() {
@@ -252,40 +262,61 @@ class HomilyGeneratorUI {
 
     bindEvents() {
         // Sélection de la péricope
-        document.getElementById('select-pericope').addEventListener('click', () => {
-            this.openVerseSelection('pericopeRef');
-        });
+        const selectPericopeBtn = document.getElementById('select-pericope');
+        if (selectPericopeBtn) {
+            selectPericopeBtn.addEventListener('click', () => {
+                this.openVerseSelection('pericopeRef');
+            });
+        }
 
         // Langue
-        document.getElementById('langSelect').value = this.state.lang;
-        document.getElementById('langSelect').addEventListener('change', (e) => {
-            this.state.lang = e.target.value;
-            this.updateUITexts();
-            this.rerenderTruths();
-        });
+        const langSelect = document.getElementById('langSelect');
+        if (langSelect) {
+            langSelect.value = this.state.lang;
+            langSelect.addEventListener('change', (e) => {
+                this.state.lang = e.target.value;
+                this.updateUITexts();
+                this.rerenderTruths();
+            });
+        }
 
         // Champs de saisie
-        document.getElementById('pericopeRef').addEventListener('input', (e) => {
-            this.state.pericopeRef = e.target.value;
-        });
+        const pericopeRef = document.getElementById('pericopeRef');
+        if (pericopeRef) {
+            pericopeRef.addEventListener('input', (e) => {
+                this.state.pericopeRef = e.target.value;
+            });
+        }
 
-        document.getElementById('pericopeSummary').addEventListener('input', (e) => {
-            this.state.pericopeSummary = e.target.value;
-        });
+        const pericopeSummary = document.getElementById('pericopeSummary');
+        if (pericopeSummary) {
+            pericopeSummary.addEventListener('input', (e) => {
+                this.state.pericopeSummary = e.target.value;
+            });
+        }
 
-        document.getElementById('conclusionNotes').addEventListener('input', (e) => {
-            this.state.conclusionNotes = e.target.value;
-        });
+        const conclusionNotes = document.getElementById('conclusionNotes');
+        if (conclusionNotes) {
+            conclusionNotes.addEventListener('input', (e) => {
+                this.state.conclusionNotes = e.target.value;
+            });
+        }
 
         // Boutons d'actions
-        document.getElementById('addTruth').addEventListener('click', () => {
-            this.state.truths.push(this.emptyTruth(this.state.truths.length + 1));
-            this.rerenderTruths();
-        });
+        const addTruthBtn = document.getElementById('addTruth');
+        if (addTruthBtn) {
+            addTruthBtn.addEventListener('click', () => {
+                this.state.truths.push(this.emptyTruth(this.state.truths.length + 1));
+                this.rerenderTruths();
+            });
+        }
 
-        document.getElementById('generate').addEventListener('click', () => {
-            this.generateOutput();
-        });
+        const generateBtn = document.getElementById('generate');
+        if (generateBtn) {
+            generateBtn.addEventListener('click', () => {
+                this.generateOutput();
+            });
+        }
     }
 
     openVerseSelection(targetField) {
@@ -320,7 +351,10 @@ class HomilyGeneratorUI {
                     const bookName = bookNames.french[book] || book;
                     const verseRef = `${bookName} ${chapter}`;
                     
-                    document.getElementById(this.currentVerseTarget).value = verseRef;
+                    const targetElement = document.getElementById(this.currentVerseTarget);
+                    if (targetElement) {
+                        targetElement.value = verseRef;
+                    }
                     
                     if (this.currentVerseTarget === 'pericopeRef') {
                         this.state.pericopeRef = verseRef;
@@ -382,14 +416,19 @@ class HomilyGeneratorUI {
         wrap.addEventListener('input', (e) => {
             const el = e.target;
             const field = el.className.split(' ')[1];
-            this.state.truths[idx][field] = el.value;
+            if (this.state.truths[idx] && field) {
+                this.state.truths[idx][field] = el.value;
+            }
         });
 
         // Bouton de sélection de versets pour cette vérité
-        wrap.querySelector('.select-verses').addEventListener('click', (e) => {
-            const index = e.target.dataset.index;
-            this.openVerseSelectionForTruth(index);
-        });
+        const selectVersesBtn = wrap.querySelector('.select-verses');
+        if (selectVersesBtn) {
+            selectVersesBtn.addEventListener('click', (e) => {
+                const index = e.target.dataset.index;
+                this.openVerseSelectionForTruth(index);
+            });
+        }
 
         // Actions de la carte
         wrap.addEventListener('click', (e) => {
@@ -424,7 +463,8 @@ class HomilyGeneratorUI {
         
         list.innerHTML = '';
         this.state.truths.forEach((truth, idx) => {
-            truth.title = this.T().truthTitle(idx + 1);
+            const t = this.T();
+            truth.title = t.truthTitle(idx + 1);
             list.appendChild(this.renderTruthCard(truth, idx));
         });
     }
@@ -442,47 +482,21 @@ class HomilyGeneratorUI {
         if (addBtn) addBtn.textContent = t.uiAddTruth;
         if (genBtn) genBtn.textContent = t.uiGenerate;
         
-        // Labels
-        const pericopeLabel = document.querySelector('label[for="pericopeRef"]');
-        const summaryLabel = document.querySelector('label[for="pericopeSummary"]');
-        if (pericopeLabel) pericopeLabel.innerHTML = `${t.uiPericope}<input id="pericopeRef" class="inp" placeholder="${t.phVerses}" /><button type="button" class="btn-small btn-secondary" id="select-pericope">Sélectionner</button>`;
-        if (summaryLabel) summaryLabel.innerHTML = `${t.uiSummary}<input id="pericopeSummary" class="inp" placeholder="${t.introSummaryLead} …" />`;
-        
-        // Recréer les événements pour les nouveaux éléments
-        this.bindPericopeEvents();
-    }
-
-    bindPericopeEvents() {
-        const pericopeInput = document.getElementById('pericopeRef');
-        const pericopeBtn = document.getElementById('select-pericope');
-        const summaryInput = document.getElementById('pericopeSummary');
-        
-        if (pericopeInput) {
-            pericopeInput.addEventListener('input', (e) => {
-                this.state.pericopeRef = e.target.value;
-            });
-        }
-        
-        if (pericopeBtn) {
-            pericopeBtn.addEventListener('click', () => {
-                this.openVerseSelection('pericopeRef');
-            });
-        }
-        
-        if (summaryInput) {
-            summaryInput.addEventListener('input', (e) => {
-                this.state.pericopeSummary = e.target.value;
-            });
-        }
+        // Mettre à jour les placeholders et labels
+        this.rerenderTruths();
     }
 
     generateOutput() {
         const md = this.renderAllMarkdown();
         const output = document.getElementById('output');
-        output.classList.remove('hidden');
+        if (output) {
+            output.classList.remove('hidden');
+        }
         
         const mdResult = document.getElementById('mdResult');
-        if (mdResult) mdResult.value = md;
+        if (mdResult) {
+            mdResult.value = md;
+        }
         
         const html = this.mdToSimpleHtml(md);
         const iframe = document.getElementById('htmlPreview');
