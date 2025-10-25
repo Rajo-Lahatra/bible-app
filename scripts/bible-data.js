@@ -206,6 +206,97 @@ export async function getVerses(book, chapter, language) {
     }
 }
 
+// FONCTION GETCHAPTERS CORRIGÉE : Avec pagination pour récupérer tous les chapitres
+export async function getChapters(book, language) {
+    if (!supabase) {
+        await initializeApp();
+    }
+
+    try {
+        const tableName = language === 'malagasy' ? 'malagasy_bible_verses' : 'french_bible_verses';
+        
+        console.log(`🔍 Récupération des chapitres pour ${book} (${language})...`);
+        
+        let allChapters = new Set();
+        let start = 0;
+        const limit = 1000;
+        let hasMore = true;
+
+        // Pagination pour récupérer tous les chapitres
+        while (hasMore) {
+            const { data, error } = await supabase
+                .from(tableName)
+                .select('chapter')
+                .eq('book', book)
+                .order('chapter')
+                .range(start, start + limit - 1);
+
+            if (error) {
+                console.error(`❌ Erreur lors de la récupération des chapitres pour ${book} (${language}):`, error);
+                return [];
+            }
+
+            if (data && data.length > 0) {
+                data.forEach(row => {
+                    if (row.chapter && !isNaN(row.chapter)) {
+                        allChapters.add(parseInt(row.chapter));
+                    }
+                });
+                
+                // Vérifier s'il reste des données
+                if (data.length < limit) {
+                    hasMore = false;
+                } else {
+                    start += limit;
+                }
+            } else {
+                hasMore = false;
+            }
+        }
+
+        // Convertir en array et trier
+        const chapters = Array.from(allChapters);
+        chapters.sort((a, b) => a - b);
+
+        console.log(`✅ ${chapters.length} chapitres trouvés pour ${book} (${language})`);
+        
+        // DEBUG: Vérification spécifique pour les Psaumes
+        if (book === 'Salamo') {
+            console.log(`🔍 Psaumes - Chapitres trouvés: ${chapters.length}`);
+            console.log(`🔍 Psaumes - Premier chapitre: ${chapters[0]}, Dernier: ${chapters[chapters.length - 1]}`);
+            
+            // Vérifier les chapitres manquants
+            if (chapters.length < 150) {
+                const missingChapters = [];
+                for (let i = 1; i <= 150; i++) {
+                    if (!chapters.includes(i)) {
+                        missingChapters.push(i);
+                    }
+                }
+                console.log(`⚠️  Psaumes - Chapitres manquants: ${missingChapters.join(', ')}`);
+                
+                // Vérification supplémentaire dans la base de données
+                const { data: debugData } = await supabase
+                    .from(tableName)
+                    .select('chapter')
+                    .eq('book', book)
+                    .order('chapter', { ascending: false })
+                    .limit(5);
+                    
+                console.log(`🔍 Derniers chapitres trouvés:`, debugData);
+            } else {
+                console.log(`✅ Tous les 150 Psaumes sont présents !`);
+            }
+        }
+
+        return chapters;
+
+    } catch (error) {
+        console.error(`❌ Erreur dans getChapters pour ${book} (${language}):`, error);
+        return [];
+    }
+}
+
 // Fonctions utilitaires pour les noms de livres
 export const bookNames = {
     french: {
@@ -227,7 +318,7 @@ export const bookNames = {
         'Nehemia': 'Néhémie',
         'Estera': 'Esther',
         'Joba': 'Job',
-        'Salamo': 'Psaume',
+        'Salamo': 'Psaume', // CORRECTION : Psaumes -> Psaume
         'Ohabolana': 'Proverbes',
         'Mpitoriteny': 'Ecclésiaste',
         'Tonon-kiran\'i Solomona': 'Cantique des Cantiques',
@@ -357,36 +448,6 @@ export const books = [
     'Hebreo', 'Jakoba', 'I Petera', 'II Petera', 'I Jaona', 'II Jaona', 'III Jaona', 'Joda', 'Apokalipsy'
 ];
 
-export async function getChapters(book, language) {
-    if (!supabase) {
-        await initializeApp();
-    }
-
-    try {
-        const tableName = language === 'malagasy' ? 'malagasy_bible_verses' : 'french_bible_verses';
-        
-        const { data, error } = await supabase
-            .from(tableName)
-            .select('chapter')
-            .eq('book', book)
-            .order('chapter');
-
-        if (error) {
-            console.error(`Error fetching chapters for ${book} (${language}):`, error);
-            return [];
-        }
-
-        // Extraire les chapitres uniques
-        const chapters = [...new Set(data.map(row => row.chapter))].sort((a, b) => a - b);
-        console.log(`✅ Found ${chapters.length} chapters for ${book} (${language})`);
-        return chapters;
-
-    } catch (error) {
-        console.error(`Error in getChapters for ${book} (${language}):`, error);
-        return [];
-    }
-}
-
 // Fonction pour obtenir le livre et chapitre actuels
 export function getCurrentBook() {
     return currentBook;
@@ -395,6 +456,7 @@ export function getCurrentBook() {
 export function getCurrentChapter() {
     return currentChapter;
 }
+
 // Fonction pour recherche utilisant Supabase
 export async function searchVerses(query, language = 'both') {
     if (!supabase) {

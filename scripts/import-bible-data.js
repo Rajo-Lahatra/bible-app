@@ -32,7 +32,7 @@ console.log('Clé:', SUPABASE_SERVICE_KEY.substring(0, 10) + '[...]');
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
 
-// FONCTION PRINCIPALE POUR IMPORTER LA BIBLE MALGACHE
+// FONCTION PRINCIPALE POUR IMPORTER LA BIBLE MALGACHE - CORRIGÉE
 async function importMalagasyBible() {
     console.log('📖 Début de l\'importation de la Bible malgache...');
     
@@ -50,15 +50,28 @@ async function importMalagasyBible() {
         let totalVerses = 0;
 
         for (const [malagasyBookName, chapters] of Object.entries(booksData)) {
-            console.log(`📚 Traitement du livre: ${malagasyBookName}`);
+            console.log(`📚 Traitement du livre: ${malagasyBookName} (${Object.keys(chapters).length} chapitres)`);
+            
+            // DEBUG: Vérification spécifique pour Salamo
+            if (malagasyBookName === 'Salamo') {
+                console.log(`🔍 Salamo - Chapitres détectés: ${Object.keys(chapters).length}`);
+                const chapterNumbers = Object.keys(chapters).map(Number).sort((a, b) => a - b);
+                console.log(`🔍 Salamo - Premier chapitre: ${chapterNumbers[0]}, Dernier: ${chapterNumbers[chapterNumbers.length - 1]}`);
+            }
             
             for (const [chapter, verses] of Object.entries(chapters)) {
+                const chapterNum = parseInt(chapter);
                 const verseData = Object.entries(verses).map(([verse, verseText]) => ({
                     book: malagasyBookName,
-                    chapter: parseInt(chapter),
+                    chapter: chapterNum,
                     verse: parseInt(verse),
                     text: verseText
                 }));
+
+                // DEBUG: Log pour les Psaumes
+                if (malagasyBookName === 'Salamo' && chapterNum >= 70) {
+                    console.log(`🔍 Importation Salamo ${chapterNum}: ${verseData.length} versets`);
+                }
 
                 const { error } = await supabase
                     .from('malagasy_bible_verses')
@@ -68,7 +81,9 @@ async function importMalagasyBible() {
                     console.error(`❌ Erreur lors de l'import de ${malagasyBookName} chapitre ${chapter}:`, error);
                 } else {
                     totalVerses += verseData.length;
-                    console.log(`✅ ${malagasyBookName} chapitre ${chapter}: ${verseData.length} versets importés`);
+                    if (malagasyBookName === 'Salamo' && chapterNum >= 70) {
+                        console.log(`✅ Salamo ${chapterNum}: ${verseData.length} versets importés avec succès`);
+                    }
                 }
             }
         }
@@ -81,7 +96,7 @@ async function importMalagasyBible() {
     }
 }
 
-// FONCTION POUR PARSER LE TEXTE MALGACHE COMBINÉ
+// FONCTION POUR PARSER LE TEXTE MALGACHE COMBINÉ - CORRIGÉE
 function parseCombinedMalagasyText(text) {
     const books = {};
     const lines = text.split('\n');
@@ -98,12 +113,12 @@ function parseCombinedMalagasyText(text) {
             // Sauvegarder le livre précédent s'il existe
             if (currentBook && currentContent.length > 0) {
                 books[currentBook] = parseMalagasyBookContent(currentContent.join('\n'));
+                console.log(`📖 Livre "${currentBook}" parsé: ${Object.keys(books[currentBook]).length} chapitres`);
             }
             
             // Commencer un nouveau livre
             currentBook = bookMatch[1];
             currentContent = [];
-            console.log(`📖 Nouveau livre détecté: ${currentBook}`);
             continue;
         }
         
@@ -116,13 +131,30 @@ function parseCombinedMalagasyText(text) {
     // Ne pas oublier le dernier livre
     if (currentBook && currentContent.length > 0) {
         books[currentBook] = parseMalagasyBookContent(currentContent.join('\n'));
+        console.log(`📖 Livre "${currentBook}" parsé: ${Object.keys(books[currentBook]).length} chapitres`);
     }
     
-    console.log(`📚 ${Object.keys(books).length} livres malgaches détectés`);
+    console.log(`📚 ${Object.keys(books).length} livres malgaches détectés au total`);
+    
+    // Vérification spécifique pour Salamo
+    if (books['Salamo']) {
+        const salamChapters = Object.keys(books['Salamo']).map(Number).sort((a, b) => a - b);
+        console.log(`🔍 VÉRIFICATION SALAMO: ${salamChapters.length} chapitres détectés`);
+        console.log(`🔍 SALAMO - Premier: ${salamChapters[0]}, Dernier: ${salamChapters[salamChapters.length - 1]}`);
+        
+        if (salamChapters.length < 150) {
+            const missing = [];
+            for (let i = 1; i <= 150; i++) {
+                if (!salamChapters.includes(i)) missing.push(i);
+            }
+            console.log(`❌ SALAMO - Chapitres manquants dans le parsing: ${missing.join(', ')}`);
+        }
+    }
+    
     return books;
 }
 
-// FONCTION POUR PARSER LE CONTENU D'UN LIVRE MALGACHE
+// FONCTION POUR PARSER LE CONTENU D'UN LIVRE MALGACHE - CORRIGÉE
 function parseMalagasyBookContent(text) {
     const chapters = {};
     const lines = text.split('\n');
@@ -131,16 +163,19 @@ function parseMalagasyBookContent(text) {
         line = line.trim();
         if (!line) return;
 
-        // Format attendu: « texte du verset » (chapitre:verset)
+        // Format attendu: « texte du verset » (Livre Chapitre:Verset)
+        // CORRECTION: Meilleure regex pour capturer tous les formats
         const verseMatch = line.match(/«\s*(.*?)\s*»\s*\(([^)]+)\)/);
         if (verseMatch) {
             const verseText = verseMatch[1].trim();
             const reference = verseMatch[2];
             
-            const refMatch = reference.match(/(\d+):(\d+)/);
+            // CORRECTION: Regex améliorée pour capturer différents formats de référence
+            const refMatch = reference.match(/(\w+)\s+(\d+):(\d+)/);
             if (refMatch) {
-                const chapter = parseInt(refMatch[1]);
-                const verse = parseInt(refMatch[2]);
+                const bookName = refMatch[1];
+                const chapter = parseInt(refMatch[2]);
+                const verse = parseInt(refMatch[3]);
                 
                 if (!chapters[chapter]) {
                     chapters[chapter] = {};
@@ -179,7 +214,7 @@ async function importFrenchBible() {
                 continue;
             }
 
-            console.log(`📚 Traitement du livre: ${malagasyBook} (${frenchBookName})`);
+            console.log(`📚 Traitement du livre: ${malagasyBook} (${frenchBookName}) - ${Object.keys(chapters).length} chapitres`);
             
             for (const [chapter, verses] of Object.entries(chapters)) {
                 const verseData = Object.entries(verses).map(([verse, verseText]) => ({
@@ -197,7 +232,6 @@ async function importFrenchBible() {
                     console.error(`❌ Erreur lors de l'import de ${malagasyBook} chapitre ${chapter}:`, error);
                 } else {
                     totalVerses += verseData.length;
-                    console.log(`✅ ${malagasyBook} (${frenchBookName}) chapitre ${chapter}: ${verseData.length} versets importés`);
                 }
             }
         }
