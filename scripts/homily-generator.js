@@ -2,6 +2,139 @@ import { bookNames, getVerses } from './bible-data.js';
 
 let bibleAppInstance = null;
 
+// Dictionnaire bilingue - Déplacé AVANT les classes
+const TDICT = {
+    mg: {
+        uiTitle: "Générateur de plan d'homélie (Toriteny)",
+        uiLangLabel: "Langue des amorces :",
+        uiLangMg: "Malagasy",
+        uiLangFr: "Français",
+        uiPericope: "Perikopa (référence à annoncer – (AVERINA INDROA))",
+        uiSummary: "Résumé (1–2 phrases)",
+        uiNotesSummary: "Petite phrase intercalée entre les vérités en conclusion (fitaomana, fampiheritreretana, kristolojia, andinin-tsoratra masina, tonon-kira…).",
+        uiAddTruth: "+ Ajouter une Fahamarinana",
+        uiGenerate: "Générer le plan",
+        uiResult: "Résultat",
+        uiCopyMd: "Copier (Markdown)",
+        uiDlTxt: "Télécharger .txt",
+        uiDlHtml: "Télécharger .html",
+
+        introGreeting: "Ho aminareo anie ny fahasoavana sy ny fiadanana avy amin'Andriamanitra Ray sy Jesoa Kristy Tompo. Amen.",
+        introPericopeLead: "Ny tenin'Andriamanitra izay angalantsika ny hafatra anio dia voasoratra ao amin'ny",
+        introPericopeRepeat: "(AVERINA INDROA)",
+        introSummaryLead: "Ity soratra masina ity dia miresaka indrindra ny",
+
+        truthTitle: (i) => `Fahamarinana ${i}`,
+        truthLead: (i) => i === 1 
+            ? "Ny fahamarinana voalohany hitantsika eto ry havana dia izao (averina in-2):"
+            : "Ny fahamarinana manaraka hitantsika eto ry havana dia izao (averina in-2):",
+        verseLead: "Hitantsika izany eo amin'ny andininy faha",
+        explainLead: "Eto, ry havana, dia hitantsika fa",
+        appLead: "Inona ary no lesona azontsika tsoahina avy amin'izany?",
+        appDimsLabel: "Dimensions (D1/D2/D3)",
+        reflectLead: "Ny fanontaniana mipetraka amiko sy aminao ary dia izao:",
+        exhortLead: "Mitaona anao aho, ry havana,",
+        christLead: "Ny vaovao mahafaly ho antsika ry havana dia izao:",
+
+        conclTitle: "Famaranana",
+        conclLead: "Raha fintinina izay rehetra voambara teo ry havana dia hitantsika teo fa:",
+        gloria: "Ho an'Andriamanitra irery ihany ny voninahitra, Amen!",
+
+        lblKey: "Déclaration (Key statement) *",
+        phKey: "Atomboka amin'ny hoe: Ny fahamarinana ... dia izao (averina in-2)",
+        lblVerses: "Andininy (référence(s))",
+        phVerses: "Oh: Zak. 8:1-8 / Mat. 5:3-10",
+        lblExplain: "Fanazavana (40%)",
+        phExplain: "Eto, ry havana, dia hitantsika fa ... (konteksta, teny loham-pahamarinana, sary ... )",
+        lblApp: (d) => `Fampiharana – ${d} (50%)`,
+        phD1: "D1 (oh: izaho/ankohonana/asa…)",
+        phD2: "D2",
+        phD3: "D3",
+        lblReflect: "Fampiheritreretana",
+        phReflect: "Ny fanontaniana mipetraka amiko sy aminao ary dia izao …",
+        lblExhort: "Fitaomana",
+        phExhort: "Mitaona anao aho, ry havana, …",
+        lblChrist: "Kristolojia",
+        phChrist: "Ny vaovao mahafaly ho antsika ry havana dia izao … (fahasoavana, vahaolana, en Kristo)",
+
+        actUp: "▲",
+        actDown: "▼",
+        actRemove: "Supprimer",
+
+        lblExplainOut: "Fanazavana :",
+        lblAppOut: "Fampiharana :",
+        lblReflectOut: "Fampiheritreretana :",
+        lblExhortOut: "Fitaomana :",
+        lblChristOut: "Kristolojia :",
+        lblVersesOut: "Andininy :",
+    },
+
+    fr: {
+        uiTitle: "Générateur de plan d'homélie",
+        uiLangLabel: "Langue des amorces :",
+        uiLangMg: "Malagasy",
+        uiLangFr: "Français",
+        uiPericope: "Péricope (référence à annoncer – (ANNONCER DEUX FOIS))",
+        uiSummary: "Résumé (1–2 phrases)",
+        uiNotesSummary: "Petite phrase intercalée entre les vérités en conclusion (exhortation, réflexion, christologie, verset, cantique…).",
+        uiAddTruth: "+ Ajouter une vérité",
+        uiGenerate: "Générer le plan",
+        uiResult: "Résultat",
+        uiCopyMd: "Copier (Markdown)",
+        uiDlTxt: "Télécharger .txt",
+        uiDlHtml: "Télécharger .html",
+
+        introGreeting: "Que la grâce et la paix vous soient données de la part de Dieu notre Père et du Seigneur Jésus-Christ. Amen.",
+        introPericopeLead: "La Parole de Dieu qui porte notre message aujourd'hui est écrite dans",
+        introPericopeRepeat: "(ANNONCER DEUX FOIS)",
+        introSummaryLead: "Ce passage parle principalement de",
+
+        truthTitle: (i) => `Vérité ${i}`,
+        truthLead: (i) => i === 1
+            ? "La première vérité que nous voyons ici, chers frères et sœurs, est la suivante (à répéter 2×) :"
+            : "La vérité suivante que nous voyons est la suivante (à répéter 2×) :",
+        verseLead: "Nous le voyons au verset",
+        explainLead: "Ici, nous constatons que",
+        appLead: "Quelle leçon concrète pouvons-nous en tirer ?",
+        appDimsLabel: "Dimensions (D1/D2/D3)",
+        reflectLead: "La question qui s'impose à vous et à moi est la suivante :",
+        exhortLead: "Je vous exhorte, chers frères et sœurs, à",
+        christLead: "La Bonne Nouvelle pour nous aujourd'hui est la suivante :",
+
+        conclTitle: "Conclusion",
+        conclLead: "En résumé, nous avons vu que :",
+        gloria: "À Dieu seul soit la gloire. Amen !",
+
+        lblKey: "Déclaration (énoncé clé) *",
+        phKey: "Commencez par : La première vérité que nous voyons… (à répéter 2×)",
+        lblVerses: "Verset(s) (référence)",
+        phVerses: "Ex : Za 8:1-8 / Mt 5:3-10",
+        lblExplain: "Explication (40 %)",
+        phExplain: "Ici, nous constatons que … (contexte, mot-clé, illustration)",
+        lblApp: (d) => `Application – ${d} (50 %)`,
+        phD1: "D1 (ex : moi/famille/travail…)",
+        phD2: "D2",
+        phD3: "D3",
+        lblReflect: "Réflexion",
+        phReflect: "La question qui s'impose à vous et à moi est la suivante …",
+        lblExhort: "Exhortation",
+        phExhort: "Je vous exhorte à …",
+        lblChrist: "Christologie",
+        phChrist: "La Bonne Nouvelle pour nous aujourd'hui est … (grâce, solution, en Christ)",
+
+        actUp: "▲",
+        actDown: "▼",
+        actRemove: "Supprimer",
+
+        lblExplainOut: "Explication :",
+        lblAppOut: "Application :",
+        lblReflectOut: "Réflexion :",
+        lblExhortOut: "Exhortation :",
+        lblChristOut: "Christologie :",
+        lblVersesOut: "Verset(s) :",
+    }
+};
+
 export function initHomilyGenerator(appInstance) {
     bibleAppInstance = appInstance;
     HomilyGenerator.init();
@@ -526,136 +659,3 @@ class HomilyGeneratorUI {
         URL.revokeObjectURL(url);
     }
 }
-
-// Dictionnaire bilingue
-const TDICT = {
-    mg: {
-        uiTitle: "Générateur de plan d'homélie (Toriteny)",
-        uiLangLabel: "Langue des amorces :",
-        uiLangMg: "Malagasy",
-        uiLangFr: "Français",
-        uiPericope: "Perikopa (référence à annoncer – (AVERINA INDROA))",
-        uiSummary: "Résumé (1–2 phrases)",
-        uiNotesSummary: "Petite phrase intercalée entre les vérités en conclusion (fitaomana, fampiheritreretana, kristolojia, andinin-tsoratra masina, tonon-kira…).",
-        uiAddTruth: "+ Ajouter une Fahamarinana",
-        uiGenerate: "Générer le plan",
-        uiResult: "Résultat",
-        uiCopyMd: "Copier (Markdown)",
-        uiDlTxt: "Télécharger .txt",
-        uiDlHtml: "Télécharger .html",
-
-        introGreeting: "Ho aminareo anie ny fahasoavana sy ny fiadanana avy amin'Andriamanitra Ray sy Jesoa Kristy Tompo. Amen.",
-        introPericopeLead: "Ny tenin'Andriamanitra izay angalantsika ny hafatra anio dia voasoratra ao amin'ny",
-        introPericopeRepeat: "(AVERINA INDROA)",
-        introSummaryLead: "Ity soratra masina ity dia miresaka indrindra ny",
-
-        truthTitle: (i) => `Fahamarinana ${i}`,
-        truthLead: (i) => i === 1 
-            ? "Ny fahamarinana voalohany hitantsika eto ry havana dia izao (averina in-2):"
-            : "Ny fahamarinana manaraka hitantsika eto ry havana dia izao (averina in-2):",
-        verseLead: "Hitantsika izany eo amin'ny andininy faha",
-        explainLead: "Eto, ry havana, dia hitantsika fa",
-        appLead: "Inona ary no lesona azontsika tsoahina avy amin'izany?",
-        appDimsLabel: "Dimensions (D1/D2/D3)",
-        reflectLead: "Ny fanontaniana mipetraka amiko sy aminao ary dia izao:",
-        exhortLead: "Mitaona anao aho, ry havana,",
-        christLead: "Ny vaovao mahafaly ho antsika ry havana dia izao:",
-
-        conclTitle: "Famaranana",
-        conclLead: "Raha fintinina izay rehetra voambara teo ry havana dia hitantsika teo fa:",
-        gloria: "Ho an'Andriamanitra irery ihany ny voninahitra, Amen!",
-
-        lblKey: "Déclaration (Key statement) *",
-        phKey: "Atomboka amin'ny hoe: Ny fahamarinana ... dia izao (averina in-2)",
-        lblVerses: "Andininy (référence(s))",
-        phVerses: "Oh: Zak. 8:1-8 / Mat. 5:3-10",
-        lblExplain: "Fanazavana (40%)",
-        phExplain: "Eto, ry havana, dia hitantsika fa ... (konteksta, teny loham-pahamarinana, sary ... )",
-        lblApp: (d) => `Fampiharana – ${d} (50%)`,
-        phD1: "D1 (oh: izaho/ankohonana/asa…)",
-        phD2: "D2",
-        phD3: "D3",
-        lblReflect: "Fampiheritreretana",
-        phReflect: "Ny fanontaniana mipetraka amiko sy aminao ary dia izao …",
-        lblExhort: "Fitaomana",
-        phExhort: "Mitaona anao aho, ry havana, …",
-        lblChrist: "Kristolojia",
-        phChrist: "Ny vaovao mahafaly ho antsika ry havana dia izao … (fahasoavana, vahaolana, en Kristo)",
-
-        actUp: "▲",
-        actDown: "▼",
-        actRemove: "Supprimer",
-
-        lblExplainOut: "Fanazavana :",
-        lblAppOut: "Fampiharana :",
-        lblReflectOut: "Fampiheritreretana :",
-        lblExhortOut: "Fitaomana :",
-        lblChristOut: "Kristolojia :",
-        lblVersesOut: "Andininy :",
-    },
-
-    fr: {
-        uiTitle: "Générateur de plan d'homélie",
-        uiLangLabel: "Langue des amorces :",
-        uiLangMg: "Malagasy",
-        uiLangFr: "Français",
-        uiPericope: "Péricope (référence à annoncer – (ANNONCER DEUX FOIS))",
-        uiSummary: "Résumé (1–2 phrases)",
-        uiNotesSummary: "Petite phrase intercalée entre les vérités en conclusion (exhortation, réflexion, christologie, verset, cantique…).",
-        uiAddTruth: "+ Ajouter une vérité",
-        uiGenerate: "Générer le plan",
-        uiResult: "Résultat",
-        uiCopyMd: "Copier (Markdown)",
-        uiDlTxt: "Télécharger .txt",
-        uiDlHtml: "Télécharger .html",
-
-        introGreeting: "Que la grâce et la paix vous soient données de la part de Dieu notre Père et du Seigneur Jésus-Christ. Amen.",
-        introPericopeLead: "La Parole de Dieu qui porte notre message aujourd'hui est écrite dans",
-        introPericopeRepeat: "(ANNONCER DEUX FOIS)",
-        introSummaryLead: "Ce passage parle principalement de",
-
-        truthTitle: (i) => `Vérité ${i}`,
-        truthLead: (i) => i === 1
-            ? "La première vérité que nous voyons ici, chers frères et sœurs, est la suivante (à répéter 2×) :"
-            : "La vérité suivante que nous voyons est la suivante (à répéter 2×) :",
-        verseLead: "Nous le voyons au verset",
-        explainLead: "Ici, nous constatons que",
-        appLead: "Quelle leçon concrète pouvons-nous en tirer ?",
-        appDimsLabel: "Dimensions (D1/D2/D3)",
-        reflectLead: "La question qui s'impose à vous et à moi est la suivante :",
-        exhortLead: "Je vous exhorte, chers frères et sœurs, à",
-        christLead: "La Bonne Nouvelle pour nous aujourd'hui est la suivante :",
-
-        conclTitle: "Conclusion",
-        conclLead: "En résumé, nous avons vu que :",
-        gloria: "À Dieu seul soit la gloire. Amen !",
-
-        lblKey: "Déclaration (énoncé clé) *",
-        phKey: "Commencez par : La première vérité que nous voyons… (à répéter 2×)",
-        lblVerses: "Verset(s) (référence)",
-        phVerses: "Ex : Za 8:1-8 / Mt 5:3-10",
-        lblExplain: "Explication (40 %)",
-        phExplain: "Ici, nous constatons que … (contexte, mot-clé, illustration)",
-        lblApp: (d) => `Application – ${d} (50 %)`,
-        phD1: "D1 (ex : moi/famille/travail…)",
-        phD2: "D2",
-        phD3: "D3",
-        lblReflect: "Réflexion",
-        phReflect: "La question qui s'impose à vous et à moi est la suivante …",
-        lblExhort: "Exhortation",
-        phExhort: "Je vous exhorte à …",
-        lblChrist: "Christologie",
-        phChrist: "La Bonne Nouvelle pour nous aujourd'hui est … (grâce, solution, en Christ)",
-
-        actUp: "▲",
-        actDown: "▼",
-        actRemove: "Supprimer",
-
-        lblExplainOut: "Explication :",
-        lblAppOut: "Application :",
-        lblReflectOut: "Réflexion :",
-        lblExhortOut: "Exhortation :",
-        lblChristOut: "Christologie :",
-        lblVersesOut: "Verset(s) :",
-    }
-};
