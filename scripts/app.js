@@ -8,9 +8,7 @@ import {
     bookNames,
     updateColumnHeaders,
     getCurrentBook,
-    getCurrentChapter,
-    searchVerses,
-    searchVersesAlternative
+    getCurrentChapter
 } from './bible-data.js';
 import { 
     saveHighlight, 
@@ -40,7 +38,6 @@ class BibleApp {
         this.isScrolling = false;
         this.isSearching = false;
         this.searchResults = [];
-        this.searchTimeout = null;
         
         this.init();
     }
@@ -155,18 +152,13 @@ class BibleApp {
             this.onChapterSelect(e.target.value);
         });
 
-        // Recherche optimisée avec délai de saisie
+        // Recherche
         document.getElementById('search-btn').addEventListener('click', () => {
             this.handleSearch();
         });
 
         document.getElementById('clear-search').addEventListener('click', () => {
             this.clearSearch();
-        });
-
-        // Recherche à la volée avec délai
-        document.getElementById('search-input').addEventListener('input', (e) => {
-            this.handleSearchInput(e.target.value);
         });
 
         document.getElementById('search-input').addEventListener('keypress', (e) => {
@@ -237,35 +229,7 @@ class BibleApp {
         this.initializeSearchResultsModal();
     }
 
-    // NOUVELLE MÉTHODE OPTIMISÉE : Gestion de la saisie de recherche
-    handleSearchInput(query) {
-        // Effacer le timeout précédent
-        if (this.searchTimeout) {
-            clearTimeout(this.searchTimeout);
-        }
-
-        // Masquer le bouton effacer si la recherche est vide
-        if (!query.trim()) {
-            document.getElementById('clear-search').style.display = 'none';
-            this.closeSearchResults();
-            return;
-        }
-
-        // Afficher le bouton effacer
-        document.getElementById('clear-search').style.display = 'inline-block';
-
-        // Si la requête est trop courte, ne pas lancer la recherche
-        if (query.trim().length < 2) {
-            return;
-        }
-
-        // Déclencher la recherche après un délai (debounce)
-        this.searchTimeout = setTimeout(() => {
-            this.handleSearch();
-        }, 500);
-    }
-
-    // MÉTHODE OPTIMISÉE : Gestion de la recherche
+    // NOUVELLE MÉTHODE : Gestion de la recherche
     async handleSearch() {
         const query = document.getElementById('search-input').value.trim();
         const language = document.getElementById('search-language').value;
@@ -275,47 +239,72 @@ class BibleApp {
             return;
         }
 
-        if (query.length < 2) {
-            this.showMessage('Veuillez entrer au moins 2 caractères', 'error');
-            return;
-        }
-
         this.isSearching = true;
         document.getElementById('search-btn').disabled = true;
         document.getElementById('search-btn').textContent = '⏳';
 
         try {
-            // Utiliser la recherche optimisée Supabase
-            this.searchResults = await this.performSupabaseSearch(query, language);
+            this.searchResults = await this.performSearch(query, language);
             this.displaySearchResults(query, language);
         } catch (error) {
             console.error('Erreur lors de la recherche:', error);
-            // Fallback vers la recherche alternative
-            try {
-                console.log('Tentative de recherche alternative...');
-                this.searchResults = await this.performSupabaseSearchAlternative(query, language);
-                this.displaySearchResults(query, language);
-            } catch (fallbackError) {
-                console.error('Erreur avec la recherche alternative:', fallbackError);
-                this.showMessage('Erreur lors de la recherche', 'error');
-            }
+            this.showMessage('Erreur lors de la recherche', 'error');
         } finally {
             document.getElementById('search-btn').disabled = false;
             document.getElementById('search-btn').textContent = '🔍';
         }
     }
 
-    // RECHERCHE OPTIMISÉE AVEC SUPABASE
-    async performSupabaseSearch(query, language) {
-        return await searchVerses(query, language);
+    async performSearch(query, language) {
+        const results = [];
+        const searchTerms = query.toLowerCase().split(' ').filter(term => term.length > 0);
+
+        // Rechercher dans tous les livres et chapitres
+        for (const book of books) {
+            const chapters = await getChapters(book, 'malagasy');
+            
+            for (const chapter of chapters) {
+                // Charger les versets selon la langue choisie
+                if (language === 'malagasy' || language === 'both') {
+                    const malagasyVerses = await getVerses(book, chapter, 'malagasy');
+                    this.searchInVerses(malagasyVerses, book, chapter, 'malagasy', searchTerms, results);
+                }
+                
+                if (language === 'french' || language === 'both') {
+                    const frenchVerses = await getVerses(book, chapter, 'french');
+                    this.searchInVerses(frenchVerses, book, chapter, 'french', searchTerms, results);
+                }
+            }
+        }
+
+        return results;
     }
 
-    // RECHERCHE ALTERNATIVE SI LA PREMIÈRE ÉCHQUE
-    async performSupabaseSearchAlternative(query, language) {
-        return await searchVersesAlternative(query, language);
-    }
+    searchInVerses(verses, book, chapter, language, searchTerms, results) {
+        Object.entries(verses).forEach(([verseNumber, verseText]) => {
+            const lowerVerseText = verseText.toLowerCase();
+            let matchesAllTerms = true;
 
-    // SUPPRIMER LES ANCIENNES MÉTHODES LENTES (performSearch et searchInVerses)
+            // Vérifier si tous les termes de recherche sont présents
+            for (const term of searchTerms) {
+                if (!lowerVerseText.includes(term)) {
+                    matchesAllTerms = false;
+                    break;
+                }
+            }
+
+            if (matchesAllTerms) {
+                results.push({
+                    book,
+                    chapter,
+                    verse: verseNumber,
+                    language,
+                    text: verseText,
+                    reference: `${bookNames.french[book]} ${chapter}:${verseNumber}`
+                });
+            }
+        });
+    }
 
     displaySearchResults(query, language) {
         const modal = document.getElementById('search-results-modal');
@@ -398,12 +387,6 @@ class BibleApp {
         this.closeSearchResults();
         this.isSearching = false;
         this.searchResults = [];
-        
-        // Effacer le timeout si existant
-        if (this.searchTimeout) {
-            clearTimeout(this.searchTimeout);
-            this.searchTimeout = null;
-        }
     }
 
     closeSearchResults() {
