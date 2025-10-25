@@ -911,3 +911,163 @@ textarea, input[type="text"] {
     opacity: 0.7;
     font-style: italic;
 }
+/* Styles pour la sélection par boutons */
+.book-selection-section,
+.chapter-selection-section {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+}
+
+.selection-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.selection-header h3 {
+    margin: 0;
+    color: var(--text-color);
+}
+
+.testament-filters {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.testament-filter {
+    padding: 0.5rem 1rem;
+    border: 1px solid var(--border-color);
+    background: var(--bg-color);
+    color: var(--text-color);
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: all 0.2s ease;
+}
+
+.testament-filter.active {
+    background: var(--secondary-color);
+    color: white;
+    border-color: var(--secondary-color);
+}
+
+.books-grid,
+.chapters-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 0.75rem;
+}
+
+.book-btn,
+.chapter-btn {
+    padding: 1rem;
+    border: 1px solid var(--border-color);
+    background: var(--bg-color);
+    color: var(--text-color);
+    border-radius: 6px;
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.2s ease;
+    font-size: 0.9rem;
+}
+
+.book-btn:hover,
+.chapter-btn:hover {
+    background: var(--hover-color);
+    border-color: var(--secondary-color);
+    transform: translateY(-2px);
+}
+
+.book-btn.active,
+.chapter-btn.active {
+    background: var(--secondary-color);
+    color: white;
+    border-color: var(--secondary-color);
+}
+
+/* Styles pour les noms de livres bilingues */
+.book-name-bilingual {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.book-name-malagasy {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-color);
+}
+
+.book-name-french {
+    font-size: 0.8rem;
+    color: var(--text-color);
+    opacity: 0.8;
+    border-top: 1px solid var(--border-color);
+    padding-top: 0.25rem;
+}
+
+.book-name-single {
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+/* Couleurs pour les testaments */
+.book-btn.old-testament {
+    border-left: 4px solid #8B4513; /* Marron pour l'ancien testament */
+}
+
+.book-btn.new-testament {
+    border-left: 4px solid #DC2626; /* Rouge pour le nouveau testament */
+}
+
+.back-to-books-btn {
+    padding: 0.5rem 1rem;
+    border: 1px solid var(--border-color);
+    background: var(--bg-color);
+    color: var(--text-color);
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.9rem;
+}
+
+.back-to-books-btn:hover {
+    background: var(--hover-color);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .books-grid,
+    .chapters-grid {
+        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+        gap: 0.5rem;
+    }
+    
+    .book-btn,
+    .chapter-btn {
+        padding: 0.75rem;
+        font-size: 0.85rem;
+    }
+    
+    .selection-header {
+        flex-direction: column;
+        align-items: stretch;
+    }
+}
+
+@media (max-width: 480px) {
+    .books-grid,
+    .chapters-grid {
+        grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    }
+    
+    .book-name-bilingual .book-name-malagasy,
+    .book-name-bilingual .book-name-french {
+        font-size: 0.75rem;
+    }
+}

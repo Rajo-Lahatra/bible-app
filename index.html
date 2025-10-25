@@ -10,12 +10,6 @@
 <body>
     <header class="app-header">
         <div class="header-main-controls">
-            <select id="book-select">
-                <option value="">Choisir un livre</option>
-            </select>
-            <select id="chapter-select">
-                <option value="">Chapitre</option>
-            </select>
             <!-- Barre de recherche -->
             <div class="search-container">
                 <input type="text" id="search-input" placeholder="Rechercher un verset...">
@@ -26,7 +20,8 @@
                 </select>
                 <button id="search-btn">🔍</button>
                 <button id="clear-search" style="display: none;">Effacer</button>
-            </div>            
+            </div>
+            
             <!-- Boutons de mode d'affichage -->
             <div class="display-mode-container">
                 <span class="mode-label">Affichage:</span>
@@ -47,6 +42,37 @@
                     <span id="user-email" class="user-email"></span>
                     <button id="my-annotations-btn" class="auth-btn">Mes annotations</button>
                     <button id="logout-btn" class="auth-btn">Déconnexion</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Nouvelle section de sélection des livres et chapitres -->
+        <div class="selection-container">
+            <!-- Sélection des livres -->
+            <div class="book-selection-section">
+                <div class="selection-header">
+                    <h3>Sélectionner un livre</h3>
+                    <div class="testament-filters">
+                        <button class="testament-filter active" data-testament="all">Tous</button>
+                        <button class="testament-filter" data-testament="old">Ancien Testament</button>
+                        <button class="testament-filter" data-testament="new">Nouveau Testament</button>
+                    </div>
+                </div>
+                
+                <div class="books-grid" id="books-grid">
+                    <!-- Les boutons des livres seront générés ici -->
+                </div>
+            </div>
+
+            <!-- Sélection des chapitres -->
+            <div class="chapter-selection-section" id="chapter-selection" style="display: none;">
+                <div class="selection-header">
+                    <h3 id="chapter-selection-title">Sélectionner un chapitre</h3>
+                    <button class="back-to-books-btn">← Retour aux livres</button>
+                </div>
+                
+                <div class="chapters-grid" id="chapters-grid">
+                    <!-- Les boutons des chapitres seront générés ici -->
                 </div>
             </div>
         </div>

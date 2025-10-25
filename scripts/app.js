@@ -55,8 +55,8 @@ class BibleApp {
         // Charger les données bibliques
         await initializeApp();
         
-        // Initialiser les sélecteurs de livres
-        await this.initializeBooks();
+        // Initialiser la sélection par boutons
+        this.initializeBookSelection();
         
         // Initialiser les événements
         this.initializeEvents();
@@ -72,30 +72,128 @@ class BibleApp {
         this.displayMode = savedMode;
     }
 
-    async initializeBooks() {
-        const bookSelect = document.getElementById('book-select');
-        bookSelect.innerHTML = '<option value="">Choisir un livre</option>';
+    // NOUVELLES MÉTHODES POUR LA SÉLECTION PAR BOUTONS
+    initializeBookSelection() {
+        this.renderBooks();
+        this.setupBookSelectionEvents();
+    }
+
+    renderBooks(testamentFilter = 'all') {
+        const booksGrid = document.getElementById('books-grid');
+        if (!booksGrid) return;
+
+        booksGrid.innerHTML = '';
+
+        // Définir les livres de l'ancien et nouveau testament
+        const oldTestamentBooks = books.slice(0, 39); // Genèse à Malachie
+        const newTestamentBooks = books.slice(39); // Matthieu à Apocalypse
+
+        let booksToRender = [];
         
-        // Liste des livres du Nouveau Testament
-        const newTestamentBooks = [
-            'MAT', 'MRK', 'LUK', 'JHN', 'ACT', 'ROM', '1CO', '2CO', 'GAL', 'EPH', 
-            'PHP', 'COL', '1TH', '2TH', '1TI', '2TI', 'TIT', 'PHM', 'HEB', 'JAS', 
-            '1PE', '2PE', '1JN', '2JN', '3JN', 'JUD', 'REV'
-        ];
-        
-        books.forEach(book => {
-            const option = document.createElement('option');
-            option.value = book;
-            option.textContent = bookNames.french[book];
-            
-            // Colorer en rouge les livres du Nouveau Testament
-            if (newTestamentBooks.includes(book)) {
-                option.style.color = 'red';
-                option.style.fontWeight = 'bold';
+        if (testamentFilter === 'old') {
+            booksToRender = oldTestamentBooks;
+        } else if (testamentFilter === 'new') {
+            booksToRender = newTestamentBooks;
+        } else {
+            booksToRender = books;
+        }
+
+        booksToRender.forEach(book => {
+            const bookBtn = document.createElement('button');
+            bookBtn.className = `book-btn ${books.indexOf(book) < 39 ? 'old-testament' : 'new-testament'}`;
+            bookBtn.dataset.book = book;
+
+            // Adapter l'affichage selon le mode
+            if (this.displayMode === 'malagasy-only') {
+                bookBtn.innerHTML = `<div class="book-name-single">${bookNames.malagasy[book]}</div>`;
+            } else if (this.displayMode === 'french-only') {
+                bookBtn.innerHTML = `<div class="book-name-single">${bookNames.french[book]}</div>`;
+            } else {
+                bookBtn.innerHTML = `
+                    <div class="book-name-bilingual">
+                        <div class="book-name-malagasy">${bookNames.malagasy[book]}</div>
+                        <div class="book-name-french">${bookNames.french[book]}</div>
+                    </div>
+                `;
             }
-            
-            bookSelect.appendChild(option);
+
+            bookBtn.addEventListener('click', () => {
+                this.onBookSelect(book);
+            });
+
+            booksGrid.appendChild(bookBtn);
         });
+    }
+
+    setupBookSelectionEvents() {
+        // Filtres par testament
+        document.querySelectorAll('.testament-filter').forEach(filter => {
+            filter.addEventListener('click', (e) => {
+                document.querySelectorAll('.testament-filter').forEach(f => f.classList.remove('active'));
+                e.target.classList.add('active');
+                this.renderBooks(e.target.dataset.testament);
+            });
+        });
+
+        // Bouton retour aux livres
+        document.querySelector('.back-to-books-btn').addEventListener('click', () => {
+            this.showBookSelection();
+        });
+    }
+
+    showBookSelection() {
+        document.querySelector('.book-selection-section').style.display = 'block';
+        document.getElementById('chapter-selection').style.display = 'none';
+    }
+
+    showChapterSelection(book) {
+        document.querySelector('.book-selection-section').style.display = 'none';
+        document.getElementById('chapter-selection').style.display = 'block';
+        
+        // Mettre à jour le titre
+        const title = document.getElementById('chapter-selection-title');
+        const bookName = this.displayMode === 'malagasy-only' ? 
+            bookNames.malagasy[book] : 
+            bookNames.french[book];
+        title.textContent = `Sélectionner un chapitre - ${bookName}`;
+    }
+
+    async renderChapters(book) {
+        const chaptersGrid = document.getElementById('chapters-grid');
+        if (!chaptersGrid) return;
+
+        chaptersGrid.innerHTML = '';
+
+        try {
+            const chapters = await getChapters(book, 'malagasy');
+            
+            chapters.forEach(chapter => {
+                const chapterBtn = document.createElement('button');
+                chapterBtn.className = 'chapter-btn';
+                chapterBtn.textContent = `Chapitre ${chapter}`;
+                chapterBtn.dataset.chapter = chapter;
+
+                chapterBtn.addEventListener('click', () => {
+                    this.onChapterSelect(chapter);
+                });
+
+                chaptersGrid.appendChild(chapterBtn);
+            });
+        } catch (error) {
+            console.error('Erreur lors du chargement des chapitres:', error);
+        }
+    }
+
+    async onBookSelect(book) {
+        this.currentBook = book;
+        this.showChapterSelection(book);
+        await this.renderChapters(book);
+    }
+
+    async onChapterSelect(chapter) {
+        this.currentChapter = chapter;
+        await this.loadVerses();
+        this.showBookSelection(); // Revenir à la sélection des livres après choix
     }
 
     setupAuthListeners() {
@@ -143,15 +241,6 @@ class BibleApp {
     }
 
     initializeEvents() {
-        // Sélection de livre et chapitre
-        document.getElementById('book-select').addEventListener('change', (e) => {
-            this.onBookSelect(e.target.value);
-        });
-
-        document.getElementById('chapter-select').addEventListener('change', (e) => {
-            this.onChapterSelect(e.target.value);
-        });
-
         // Recherche
         document.getElementById('search-btn').addEventListener('click', () => {
             this.handleSearch();
@@ -187,6 +276,8 @@ class BibleApp {
                 const mode = e.target.dataset.mode;
                 setDisplayMode(mode);
                 this.displayMode = mode;
+                // Re-rendre les livres avec le nouveau mode d'affichage
+                this.renderBooks();
             });
         });
 
@@ -229,7 +320,7 @@ class BibleApp {
         this.initializeSearchResultsModal();
     }
 
-    // NOUVELLE MÉTHODE : Gestion de la recherche
+    // Gestion de la recherche
     async handleSearch() {
         const query = document.getElementById('search-input').value.trim();
         const language = document.getElementById('search-language').value;
@@ -359,10 +450,8 @@ class BibleApp {
     goToSearchResult(result) {
         this.closeSearchResults();
         
-        // Mettre à jour les sélecteurs
-        document.getElementById('book-select').value = result.book;
+        // Utiliser la nouvelle interface de sélection
         this.onBookSelect(result.book).then(() => {
-            document.getElementById('chapter-select').value = result.chapter;
             this.onChapterSelect(result.chapter).then(() => {
                 // Faire défiler jusqu'au verset
                 setTimeout(() => {
@@ -408,7 +497,6 @@ class BibleApp {
         });
     }
 
-    // Les autres méthodes restent inchangées...
     initializeAuthModal() {
         const authModal = document.getElementById('auth-modal');
         const authForm = document.getElementById('auth-form');
@@ -887,39 +975,6 @@ class BibleApp {
         }
     }
 
-    async onBookSelect(bookId) {
-        this.currentBook = bookId;
-        await this.loadChapters(bookId);
-        await this.loadVerses();
-    }
-
-    async onChapterSelect(chapterId) {
-        this.currentChapter = chapterId;
-        await this.loadVerses();
-    }
-
-    async loadChapters(bookId) {
-        if (!bookId) return;
-
-        try {
-            const chapterSelect = document.getElementById('chapter-select');
-            chapterSelect.innerHTML = '<option value="">Chapitre</option>';
-            
-            const chapters = await getChapters(bookId, 'malagasy');
-            
-            chapters.forEach(chapter => {
-                const option = document.createElement('option');
-                option.value = chapter;
-                option.textContent = `Chapitre ${chapter}`;
-                chapterSelect.appendChild(option);
-            });
-            
-            console.log(`Chargé ${chapters.length} chapitres pour ${bookId}`);
-        } catch (error) {
-            console.error('Erreur lors du chargement des chapitres:', error);
-        }
-    }
-
     async loadVerses() {
         if (!this.currentBook || !this.currentChapter) return;
         
@@ -1154,7 +1209,7 @@ class BibleApp {
 
     formatVerseId(verseId) {
         const [book, chapter, verse] = verseId.split('-');
-        return `${book} ${chapter}:${verse}`;
+        return `${bookNames.french[book]} ${chapter}:${verse}`;
     }
 
     async goToVerse(verseId) {
@@ -1162,10 +1217,8 @@ class BibleApp {
         
         document.getElementById('annotations-modal').style.display = 'none';
         
-        document.getElementById('book-select').value = book;
+        // Utiliser la nouvelle interface de sélection
         await this.onBookSelect(book);
-        
-        document.getElementById('chapter-select').value = chapter;
         await this.onChapterSelect(chapter);
         
         setTimeout(() => {
