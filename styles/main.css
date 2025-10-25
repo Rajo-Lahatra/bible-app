@@ -36,7 +36,6 @@ body {
     transition: background-color 0.3s ease, color 0.3s ease;
 }
 
-/* HEADER ORIGINAL QUI FONCTIONNAIT */
 .app-header {
     background-color: var(--card-bg);
     padding: 1rem;
@@ -81,7 +80,6 @@ button:hover {
     border-color: var(--secondary-color);
 }
 
-/* Conteneur pour les boutons de mode d'affichage */
 .display-mode-container {
     display: flex;
     align-items: center;
@@ -139,7 +137,6 @@ button:hover {
     border-color: var(--secondary-color);
 }
 
-/* Section d'authentification */
 .auth-section {
     display: flex;
     align-items: center;
@@ -180,7 +177,6 @@ button:hover {
     color: var(--text-color);
 }
 
-/* Barre d'outils fixe */
 .toolbar-fixed {
     display: flex;
     justify-content: space-between;
@@ -208,7 +204,6 @@ button:hover {
     white-space: nowrap;
 }
 
-/* Boutons d'outils */
 .tool-btn {
     padding: 0.5rem 0.75rem;
     border: 1px solid var(--border-color);
@@ -237,7 +232,6 @@ button:hover {
     box-shadow: 0 0 0 2px var(--secondary-color);
 }
 
-/* Navigation entre chapitres */
 .navigation-controls {
     display: flex;
     align-items: center;
@@ -278,7 +272,6 @@ button:hover {
     display: inline-block;
 }
 
-/* CONTENU PRINCIPAL DE LA BIBLE */
 .bible-container {
     display: flex;
     max-width: 1400px;
@@ -289,7 +282,6 @@ button:hover {
     transition: all 0.3s ease;
 }
 
-/* Styles pour les différents modes d'affichage */
 .bible-container.single-column {
     flex-direction: column;
 }
@@ -389,7 +381,6 @@ button:hover {
     font-size: 1.3rem;
 }
 
-/* Styles pour le texte coloré */
 .verse.highlighted-blue {
     color: #2563eb !important;
     font-weight: 500;
@@ -405,7 +396,6 @@ button:hover {
     font-weight: 500;
 }
 
-/* MODALES - TOUTES CACHÉES PAR DÉFAUT */
 .modal {
     display: none;
     position: fixed;
@@ -427,7 +417,6 @@ button:hover {
     box-shadow: var(--shadow);
 }
 
-/* Modale de sélection des livres - Agrandie */
 .selection-modal-content {
     max-width: 95vw;
     max-height: 95vh;
@@ -472,7 +461,6 @@ textarea, input[type="text"] {
     justify-content: flex-end;
 }
 
-/* Modal de commentaire amélioré */
 .verse-reference-display {
     background: var(--hover-color);
     padding: 0.75rem;
@@ -547,7 +535,6 @@ textarea, input[type="text"] {
     color: var(--primary-color);
 }
 
-/* Modal de prévisualisation */
 .preview-content {
     max-height: 400px;
     overflow-y: auto;
@@ -557,7 +544,6 @@ textarea, input[type="text"] {
     border: 1px solid var(--border-color);
 }
 
-/* Boutons */
 .btn-primary {
     background: var(--secondary-color);
     color: white;
@@ -586,7 +572,6 @@ textarea, input[type="text"] {
     background: var(--hover-color);
 }
 
-/* Modale d'authentification */
 .auth-modal-content {
     max-width: 400px;
 }
@@ -640,7 +625,6 @@ textarea, input[type="text"] {
     opacity: 0.7;
 }
 
-/* Styles pour le modal des annotations */
 .annotations-modal-content {
     max-width: 800px;
     max-height: 80vh;
@@ -762,7 +746,6 @@ textarea, input[type="text"] {
     font-style: italic;
 }
 
-/* Styles pour la sélection par boutons */
 .book-selection-section,
 .chapter-selection-section {
     background: var(--card-bg);
@@ -812,19 +795,21 @@ textarea, input[type="text"] {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
     gap: 0.5rem;
-    flex: 1;
-    overflow-y: auto;
     padding: 0.5rem;
+    overflow-y: auto;
+    max-height: calc(95vh - 200px);
+    align-content: start;
 }
 
-/* Modale de sélection des chapitres - Taille normale */
+/* CORRECTION CRITIQUE : Boutons de chapitre avec hauteur normale */
 .chapters-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
     gap: 0.5rem;
-    flex: 1;
-    overflow-y: auto;
     padding: 0.5rem;
+    overflow-y: auto;
+    max-height: calc(95vh - 200px);
+    align-content: start; /* Empêche l'étirement vertical */
 }
 
 .chapter-btn {
@@ -837,12 +822,13 @@ textarea, input[type="text"] {
     text-align: center;
     transition: all 0.2s ease;
     font-size: 0.9rem;
+    font-weight: 500;
     height: auto;
     min-height: auto;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-weight: 500;
+    flex-shrink: 0;
 }
 
 .chapter-btn:hover {
@@ -885,7 +871,6 @@ textarea, input[type="text"] {
     border-color: var(--secondary-color);
 }
 
-/* Styles pour les noms de livres bilingues */
 .book-name-bilingual {
     display: flex;
     flex-direction: column;
@@ -911,13 +896,12 @@ textarea, input[type="text"] {
     font-weight: 500;
 }
 
-/* Couleurs pour les testaments */
 .book-btn.old-testament {
-    border-left: 4px solid #8B4513; /* Marron pour l'ancien testament */
+    border-left: 4px solid #8B4513;
 }
 
 .book-btn.new-testament {
-    border-left: 4px solid #DC2626; /* Rouge pour le nouveau testament */
+    border-left: 4px solid #DC2626;
 }
 
 .back-to-books-btn {
@@ -934,7 +918,6 @@ textarea, input[type="text"] {
     background: var(--hover-color);
 }
 
-/* Responsive */
 @media (max-width: 768px) {
     .header-main-controls {
         flex-direction: column;
@@ -998,6 +981,7 @@ textarea, input[type="text"] {
     .books-grid {
         grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
         gap: 0.5rem;
+        max-height: calc(95vh - 180px);
     }
     
     .book-btn {
@@ -1008,6 +992,7 @@ textarea, input[type="text"] {
     .chapters-grid {
         grid-template-columns: repeat(auto-fill, minmax(70px, 1fr));
         gap: 0.4rem;
+        max-height: calc(95vh - 180px);
     }
     
     .chapter-btn {
@@ -1057,6 +1042,7 @@ textarea, input[type="text"] {
 
     .books-grid {
         grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+        max-height: calc(95vh - 160px);
     }
     
     .book-name-bilingual .book-name-malagasy,
@@ -1066,6 +1052,7 @@ textarea, input[type="text"] {
 
     .chapters-grid {
         grid-template-columns: repeat(auto-fill, minmax(65px, 1fr));
+        max-height: calc(95vh - 160px);
     }
     
     .chapter-btn {
@@ -1074,7 +1061,6 @@ textarea, input[type="text"] {
     }
 }
 
-/* Styles pour les différents modes d'affichage */
 .bible-container.both-columns {
     display: flex;
     flex-direction: row;
@@ -1093,53 +1079,7 @@ textarea, input[type="text"] {
     display: flex !important;
 }
 
-/* S'assurer que les deux colonnes sont visibles en mode both */
 .bible-container.both-columns .bible-column {
     display: flex !important;
     flex: 1;
-}
-/* Styles pour la barre de recherche */
-.search-container {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    margin: 0 0.5rem;
-    padding: 0.5rem;
-    background: var(--card-bg);
-    border-radius: 8px;
-    border: 1px solid var(--border-color);
-}
-
-#search-input {
-    padding: 0.5rem;
-    border: 1px solid var(--border-color);
-    border-radius: 6px;
-    background: var(--bg-color);
-    color: var(--text-color);
-    font-size: 0.9rem;
-    min-width: 200px;
-}
-
-#search-language {
-    padding: 0.5rem;
-    border: 1px solid var(--border-color);
-    border-radius: 6px;
-    background: var(--bg-color);
-    color: var(--text-color);
-    font-size: 0.9rem;
-}
-
-#search-btn, #clear-search {
-    padding: 0.5rem 0.75rem;
-    border: 1px solid var(--border-color);
-    background: var(--bg-color);
-    color: var(--text-color);
-    border-radius: 6px;
-    cursor: pointer;
-    font-size: 0.9rem;
-}
-
-#search-btn:hover, #clear-search:hover {
-    background: var(--hover-color);
-    border-color: var(--secondary-color);
 }
