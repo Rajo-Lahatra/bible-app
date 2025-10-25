@@ -36,6 +36,7 @@ class BibleApp {
         this.currentUser = null;
         this.editingCommentId = null;
         this.isScrolling = false;
+        this.maxChapters = {};
         
         this.init();
     }
@@ -76,6 +77,7 @@ class BibleApp {
     async loadDefaultBook() {
         await this.loadVerses();
         this.updateCurrentSelectionDisplay();
+        this.updateNavigationButtons();
     }
 
     updateCurrentSelectionDisplay() {
@@ -148,7 +150,7 @@ class BibleApp {
 
     openBookSelectionModal() {
         document.getElementById('book-selection-modal').style.display = 'block';
-        document.body.style.overflow = 'hidden'; // Empêcher le scroll du body
+        document.body.style.overflow = 'hidden';
     }
 
     openChapterSelectionModal(book) {
@@ -159,17 +161,17 @@ class BibleApp {
         title.textContent = `Sélectionner un chapitre - ${bookName}`;
         
         document.getElementById('chapter-selection-modal').style.display = 'block';
-        document.body.style.overflow = 'hidden'; // Empêcher le scroll du body
+        document.body.style.overflow = 'hidden';
     }
 
     closeBookSelectionModal() {
         document.getElementById('book-selection-modal').style.display = 'none';
-        document.body.style.overflow = 'auto'; // Rétablir le scroll du body
+        document.body.style.overflow = 'auto';
     }
 
     closeChapterSelectionModal() {
         document.getElementById('chapter-selection-modal').style.display = 'none';
-        document.body.style.overflow = 'auto'; // Rétablir le scroll du body
+        document.body.style.overflow = 'auto';
     }
 
     async renderChapters(book) {
@@ -184,7 +186,7 @@ class BibleApp {
             chapters.forEach(chapter => {
                 const chapterBtn = document.createElement('button');
                 chapterBtn.className = 'chapter-btn';
-                chapterBtn.textContent = `Chapitre ${chapter}`;
+                chapterBtn.textContent = chapter;
                 chapterBtn.dataset.chapter = chapter;
 
                 chapterBtn.addEventListener('click', () => {
@@ -203,6 +205,7 @@ class BibleApp {
         await this.renderChapters(book);
         this.closeBookSelectionModal();
         this.openChapterSelectionModal(book);
+        this.updateNavigationButtons();
     }
 
     async onChapterSelect(chapter) {
@@ -210,6 +213,53 @@ class BibleApp {
         this.closeChapterSelectionModal();
         await this.loadVerses();
         this.updateCurrentSelectionDisplay();
+        this.updateNavigationButtons();
+    }
+
+    async previousChapter() {
+        const currentChapter = parseInt(this.currentChapter);
+        if (currentChapter > 1) {
+            await this.onChapterSelect((currentChapter - 1).toString());
+        }
+    }
+
+    async nextChapter() {
+        const currentChapter = parseInt(this.currentChapter);
+        const maxChapter = await this.getMaxChapters(this.currentBook);
+        if (currentChapter < maxChapter) {
+            await this.onChapterSelect((currentChapter + 1).toString());
+        }
+    }
+
+    async getMaxChapters(book) {
+        if (this.maxChapters[book]) {
+            return this.maxChapters[book];
+        }
+        
+        try {
+            const chapters = await getChapters(book, 'malagasy');
+            this.maxChapters[book] = chapters.length;
+            return chapters.length;
+        } catch (error) {
+            console.error('Erreur lors de la récupération des chapitres:', error);
+            return 1;
+        }
+    }
+
+    updateNavigationButtons() {
+        const prevBtn = document.getElementById('prev-chapter');
+        const nextBtn = document.getElementById('next-chapter');
+        const currentChapter = parseInt(this.currentChapter);
+        
+        if (prevBtn) {
+            prevBtn.disabled = currentChapter <= 1;
+        }
+        
+        if (nextBtn) {
+            this.getMaxChapters(this.currentBook).then(maxChapter => {
+                nextBtn.disabled = currentChapter >= maxChapter;
+            });
+        }
     }
 
     setupAuthListeners() {
@@ -265,7 +315,7 @@ class BibleApp {
             closeBtn.addEventListener('click', (e) => {
                 const modal = e.target.closest('.modal');
                 modal.style.display = 'none';
-                document.body.style.overflow = 'auto'; // Rétablir le scroll du body
+                document.body.style.overflow = 'auto';
             });
         });
 
@@ -313,6 +363,15 @@ class BibleApp {
 
         document.getElementById('my-annotations-btn').addEventListener('click', () => {
             this.openAnnotationsModal();
+        });
+
+        // Navigation entre chapitres
+        document.getElementById('prev-chapter').addEventListener('click', () => {
+            this.previousChapter();
+        });
+
+        document.getElementById('next-chapter').addEventListener('click', () => {
+            this.nextChapter();
         });
 
         this.initializeCommentModal();

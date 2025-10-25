@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Bible : Malgache-Français</title>
     <link rel="stylesheet" href="styles/main.css">
+    <link rel="stylesheet" href="styles/responsive.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
@@ -15,9 +16,17 @@
                 📖 Sélectionner un livre
             </button>
             
-            <!-- Affichage du livre et chapitre actuel -->
+            <!-- Affichage du livre et chapitre actuel avec navigation -->
             <div class="current-selection">
-                <span id="current-book-display">Genèse 1</span>
+                <div class="navigation-controls">
+                    <button id="prev-chapter" class="nav-btn" title="Chapitre précédent">
+                        ← Précédent
+                    </button>
+                    <span id="current-book-display">Genèse 1</span>
+                    <button id="next-chapter" class="nav-btn" title="Chapitre suivant">
+                        Suivant →
+                    </button>
+                </div>
             </div>
             
             <!-- Boutons de mode d'affichage -->

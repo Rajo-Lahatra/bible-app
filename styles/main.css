@@ -237,6 +237,47 @@ button:hover {
     box-shadow: 0 0 0 2px var(--secondary-color);
 }
 
+/* Navigation entre chapitres */
+.navigation-controls {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.nav-btn {
+    padding: 0.5rem 0.75rem;
+    border: 1px solid var(--border-color);
+    background: var(--bg-color);
+    color: var(--text-color);
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+}
+
+.nav-btn:hover:not(:disabled) {
+    background: var(--hover-color);
+    border-color: var(--secondary-color);
+}
+
+.nav-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.current-selection {
+    min-width: 200px;
+    text-align: center;
+}
+
+#current-book-display {
+    font-weight: 600;
+    color: var(--text-color);
+    min-width: 120px;
+    display: inline-block;
+}
+
 /* CONTENU PRINCIPAL DE LA BIBLE */
 .bible-container {
     display: flex;
@@ -384,6 +425,17 @@ button:hover {
     width: 90%;
     max-width: 500px;
     box-shadow: var(--shadow);
+}
+
+/* Modale de sélection des livres - Agrandie */
+.selection-modal-content {
+    max-width: 95vw;
+    max-height: 95vh;
+    width: 95vw;
+    height: 95vh;
+    margin: 2.5vh auto;
+    display: flex;
+    flex-direction: column;
 }
 
 .close {
@@ -710,6 +762,155 @@ textarea, input[type="text"] {
     font-style: italic;
 }
 
+/* Styles pour la sélection par boutons */
+.book-selection-section,
+.chapter-selection-section {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+}
+
+.selection-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.selection-header h3 {
+    margin: 0;
+    color: var(--text-color);
+}
+
+.testament-filters {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.testament-filter {
+    padding: 0.5rem 1rem;
+    border: 1px solid var(--border-color);
+    background: var(--bg-color);
+    color: var(--text-color);
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: all 0.2s ease;
+}
+
+.testament-filter.active {
+    background: var(--secondary-color);
+    color: white;
+    border-color: var(--secondary-color);
+}
+
+.books-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 0.5rem;
+    flex: 1;
+    overflow-y: auto;
+    padding: 0.5rem;
+}
+
+.chapters-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(70px, 1fr));
+    gap: 0.4rem;
+    flex: 1;
+    overflow-y: auto;
+    padding: 0.5rem;
+}
+
+.book-btn,
+.chapter-btn {
+    padding: 0.6rem 0.4rem;
+    border: 1px solid var(--border-color);
+    background: var(--bg-color);
+    color: var(--text-color);
+    border-radius: 6px;
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.2s ease;
+    font-size: 0.8rem;
+    min-height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.chapter-btn {
+    min-height: 45px;
+    padding: 0.5rem 0.3rem;
+}
+
+.book-btn:hover,
+.chapter-btn:hover {
+    background: var(--hover-color);
+    border-color: var(--secondary-color);
+    transform: translateY(-2px);
+}
+
+.book-btn.active,
+.chapter-btn.active {
+    background: var(--secondary-color);
+    color: white;
+    border-color: var(--secondary-color);
+}
+
+/* Styles pour les noms de livres bilingues */
+.book-name-bilingual {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.book-name-malagasy {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--text-color);
+}
+
+.book-name-french {
+    font-size: 0.7rem;
+    color: var(--text-color);
+    opacity: 0.8;
+    border-top: 1px solid var(--border-color);
+    padding-top: 0.25rem;
+}
+
+.book-name-single {
+    font-size: 0.8rem;
+    font-weight: 500;
+}
+
+/* Couleurs pour les testaments */
+.book-btn.old-testament {
+    border-left: 4px solid #8B4513; /* Marron pour l'ancien testament */
+}
+
+.book-btn.new-testament {
+    border-left: 4px solid #DC2626; /* Rouge pour le nouveau testament */
+}
+
+.back-to-books-btn {
+    padding: 0.5rem 1rem;
+    border: 1px solid var(--border-color);
+    background: var(--bg-color);
+    color: var(--text-color);
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.9rem;
+}
+
+.back-to-books-btn:hover {
+    background: var(--hover-color);
+}
+
 /* Responsive */
 @media (max-width: 768px) {
     .header-main-controls {
@@ -756,6 +957,37 @@ textarea, input[type="text"] {
         justify-content: center;
         width: 100%;
     }
+
+    .navigation-controls {
+        gap: 0.5rem;
+    }
+    
+    .nav-btn {
+        padding: 0.4rem 0.6rem;
+        font-size: 0.8rem;
+    }
+    
+    #current-book-display {
+        min-width: 100px;
+        font-size: 0.9rem;
+    }
+
+    .books-grid,
+    .chapters-grid {
+        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+        gap: 0.5rem;
+    }
+    
+    .book-btn,
+    .chapter-btn {
+        padding: 0.75rem;
+        font-size: 0.85rem;
+    }
+    
+    .selection-header {
+        flex-direction: column;
+        align-items: stretch;
+    }
 }
 
 @media (max-width: 480px) {
@@ -776,6 +1008,30 @@ textarea, input[type="text"] {
         width: 100%;
         text-align: center;
         margin-bottom: 0.25rem;
+    }
+
+    .navigation-controls {
+        flex-direction: column;
+        gap: 0.25rem;
+    }
+    
+    .nav-btn {
+        width: 100%;
+        padding: 0.5rem;
+    }
+    
+    .current-selection {
+        min-width: auto;
+    }
+
+    .books-grid,
+    .chapters-grid {
+        grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    }
+    
+    .book-name-bilingual .book-name-malagasy,
+    .book-name-bilingual .book-name-french {
+        font-size: 0.75rem;
     }
 }
 /* Styles pour les différents modes d'affichage */
@@ -910,164 +1166,4 @@ textarea, input[type="text"] {
     color: var(--text-color);
     opacity: 0.7;
     font-style: italic;
-}
-/* Styles pour la sélection par boutons */
-.book-selection-section,
-.chapter-selection-section {
-    background: var(--card-bg);
-    border: 1px solid var(--border-color);
-    border-radius: 8px;
-    padding: 1rem;
-    margin-bottom: 1rem;
-}
-
-.selection-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 1rem;
-    flex-wrap: wrap;
-    gap: 1rem;
-}
-
-.selection-header h3 {
-    margin: 0;
-    color: var(--text-color);
-}
-
-.testament-filters {
-    display: flex;
-    gap: 0.5rem;
-}
-
-.testament-filter {
-    padding: 0.5rem 1rem;
-    border: 1px solid var(--border-color);
-    background: var(--bg-color);
-    color: var(--text-color);
-    border-radius: 6px;
-    cursor: pointer;
-    font-size: 0.9rem;
-    transition: all 0.2s ease;
-}
-
-.testament-filter.active {
-    background: var(--secondary-color);
-    color: white;
-    border-color: var(--secondary-color);
-}
-
-.books-grid,
-.chapters-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-    gap: 0.75rem;
-}
-
-.book-btn,
-.chapter-btn {
-    padding: 1rem;
-    border: 1px solid var(--border-color);
-    background: var(--bg-color);
-    color: var(--text-color);
-    border-radius: 6px;
-    cursor: pointer;
-    text-align: center;
-    transition: all 0.2s ease;
-    font-size: 0.9rem;
-}
-
-.book-btn:hover,
-.chapter-btn:hover {
-    background: var(--hover-color);
-    border-color: var(--secondary-color);
-    transform: translateY(-2px);
-}
-
-.book-btn.active,
-.chapter-btn.active {
-    background: var(--secondary-color);
-    color: white;
-    border-color: var(--secondary-color);
-}
-
-/* Styles pour les noms de livres bilingues */
-.book-name-bilingual {
-    display: flex;
-    flex-direction: column;
-    gap: 0.25rem;
-}
-
-.book-name-malagasy {
-    font-size: 0.85rem;
-    font-weight: 600;
-    color: var(--text-color);
-}
-
-.book-name-french {
-    font-size: 0.8rem;
-    color: var(--text-color);
-    opacity: 0.8;
-    border-top: 1px solid var(--border-color);
-    padding-top: 0.25rem;
-}
-
-.book-name-single {
-    font-size: 0.9rem;
-    font-weight: 500;
-}
-
-/* Couleurs pour les testaments */
-.book-btn.old-testament {
-    border-left: 4px solid #8B4513; /* Marron pour l'ancien testament */
-}
-
-.book-btn.new-testament {
-    border-left: 4px solid #DC2626; /* Rouge pour le nouveau testament */
-}
-
-.back-to-books-btn {
-    padding: 0.5rem 1rem;
-    border: 1px solid var(--border-color);
-    background: var(--bg-color);
-    color: var(--text-color);
-    border-radius: 6px;
-    cursor: pointer;
-    font-size: 0.9rem;
-}
-
-.back-to-books-btn:hover {
-    background: var(--hover-color);
-}
-
-/* Responsive */
-@media (max-width: 768px) {
-    .books-grid,
-    .chapters-grid {
-        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-        gap: 0.5rem;
-    }
-    
-    .book-btn,
-    .chapter-btn {
-        padding: 0.75rem;
-        font-size: 0.85rem;
-    }
-    
-    .selection-header {
-        flex-direction: column;
-        align-items: stretch;
-    }
-}
-
-@media (max-width: 480px) {
-    .books-grid,
-    .chapters-grid {
-        grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-    }
-    
-    .book-name-bilingual .book-name-malagasy,
-    .book-name-bilingual .book-name-french {
-        font-size: 0.75rem;
-    }
 }
