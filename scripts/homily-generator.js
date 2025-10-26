@@ -1,4 +1,4 @@
-import { bookNames, getVerses } from './bible-data.js';
+import { bookNames, getVerses, books, getChapters } from './bible-data.js';
 
 let bibleAppInstance = null;
 
@@ -73,7 +73,9 @@ const TDICT = {
         verseFrom: "Du verset",
         verseTo: "au verset",
         selectVerses: "Sélectionner",
-        selectedVerses: "Versets sélectionnés"
+        selectedVerses: "Versets sélectionnés",
+        selectBook: "Livre",
+        selectChapter: "Chapitre"
     },
 
     fr: {
@@ -145,7 +147,9 @@ const TDICT = {
         verseFrom: "Du verset",
         verseTo: "au verset",
         selectVerses: "Sélectionner",
-        selectedVerses: "Versets sélectionnés"
+        selectedVerses: "Versets sélectionnés",
+        selectBook: "Livre",
+        selectChapter: "Chapitre"
     }
 };
 
@@ -180,6 +184,11 @@ class HomilyGeneratorUI {
         this.currentVerseTarget = null;
         this.currentTruthIndex = null;
         this.selectedVerses = {};
+        this.currentBook = "Genesisy";
+        this.currentChapter = "1";
+        this.currentFromVerse = 1;
+        this.currentToVerse = 1;
+        this.maxVerses = 1;
         
         // Maintenant initialiser les truths après que this.state soit défini
         this.state.truths = [this.emptyTruth(1), this.emptyTruth(2)];
@@ -220,6 +229,7 @@ class HomilyGeneratorUI {
             homilyContainer.innerHTML = this.getTemplate();
             this.bindEvents();
             this.rerenderTruths();
+            this.initializeVerseSelectionModal();
         } catch (error) {
             console.error('Erreur lors de l\'initialisation de l\'UI homélie:', error);
         }
@@ -286,6 +296,19 @@ class HomilyGeneratorUI {
                         <h3>${t.verseSelectionTitle}</h3>
                         
                         <div class="verse-selection-controls">
+                            <div class="book-chapter-selection">
+                                <label>${t.selectBook}
+                                    <select id="verse-book-select" class="inp">
+                                        ${this.getBookOptions()}
+                                    </select>
+                                </label>
+                                <label>${t.selectChapter}
+                                    <select id="verse-chapter-select" class="inp">
+                                        <option value="1">1</option>
+                                    </select>
+                                </label>
+                            </div>
+                            
                             <div class="verse-range">
                                 <label>${t.verseFrom}
                                     <input type="number" id="verse-from" min="1" value="1" class="inp small-input">
@@ -297,7 +320,9 @@ class HomilyGeneratorUI {
                             
                             <div class="selected-verses-display">
                                 <h4>${t.selectedVerses}:</h4>
-                                <div id="selected-verses-list" class="verses-list"></div>
+                                <div id="selected-verses-list" class="verses-list">
+                                    <div class="verse-item">Genèse 1:1-1</div>
+                                </div>
                             </div>
                         </div>
                         
@@ -368,6 +393,16 @@ class HomilyGeneratorUI {
                     max-width: 600px;
                 }
 
+                .book-chapter-selection {
+                    display: flex;
+                    gap: 1rem;
+                    margin-bottom: 1rem;
+                }
+
+                .book-chapter-selection label {
+                    flex: 1;
+                }
+
                 .verse-range {
                     display: flex;
                     gap: 1rem;
@@ -424,6 +459,13 @@ class HomilyGeneratorUI {
                 }
             </style>
         `;
+    }
+
+    getBookOptions() {
+        return books.map(book => {
+            const bookName = bookNames.french[book] || book;
+            return `<option value="${book}">${bookName}</option>`;
+        }).join('');
     }
 
     bindEvents() {
@@ -483,17 +525,17 @@ class HomilyGeneratorUI {
                 this.generateOutput();
             });
         }
-
-        // Gestion de la modale de sélection des versets
-        this.setupVerseSelectionModal();
     }
 
-    setupVerseSelectionModal() {
+    initializeVerseSelectionModal() {
         const modal = document.getElementById('verse-selection-modal');
         const closeBtn = modal.querySelector('.close');
         const cancelBtn = document.getElementById('cancel-verse-selection');
         const confirmBtn = document.getElementById('confirm-verse-selection');
+        const bookSelect = document.getElementById('verse-book-select');
+        const chapterSelect = document.getElementById('verse-chapter-select');
 
+        // Fermeture de la modale
         closeBtn.addEventListener('click', () => {
             modal.style.display = 'none';
         });
@@ -506,84 +548,141 @@ class HomilyGeneratorUI {
             this.confirmVerseSelection();
         });
 
+        // Changement de livre
+        bookSelect.addEventListener('change', (e) => {
+            this.currentBook = e.target.value;
+            this.loadChaptersForBook(this.currentBook);
+        });
+
+        // Changement de chapitre
+        chapterSelect.addEventListener('change', (e) => {
+            this.currentChapter = e.target.value;
+            this.loadVersesForChapter(this.currentBook, parseInt(this.currentChapter));
+        });
+
+        // Changement des versets
+        document.getElementById('verse-from').addEventListener('input', (e) => {
+            this.currentFromVerse = parseInt(e.target.value) || 1;
+            this.updateSelectedVersesDisplay();
+        });
+
+        document.getElementById('verse-to').addEventListener('input', (e) => {
+            this.currentToVerse = parseInt(e.target.value) || 1;
+            this.updateSelectedVersesDisplay();
+        });
+
         window.addEventListener('click', (e) => {
             if (e.target === modal) {
                 modal.style.display = 'none';
             }
         });
+
+        // Initialiser avec Genèse
+        this.loadChaptersForBook('Genesisy');
+    }
+
+    async loadChaptersForBook(book) {
+        const chapterSelect = document.getElementById('verse-chapter-select');
+        
+        try {
+            const chapters = await getChapters(book, 'french');
+            chapterSelect.innerHTML = '';
+            
+            chapters.forEach(chapter => {
+                const option = document.createElement('option');
+                option.value = chapter;
+                option.textContent = chapter;
+                chapterSelect.appendChild(option);
+            });
+            
+            this.currentChapter = chapters[0] || "1";
+            await this.loadVersesForChapter(book, parseInt(this.currentChapter));
+        } catch (error) {
+            console.error('Erreur lors du chargement des chapitres:', error);
+            chapterSelect.innerHTML = '<option value="1">1</option>';
+        }
+    }
+
+    async loadVersesForChapter(book, chapter) {
+        try {
+            const verses = await getVerses(book, chapter, 'french');
+            const verseNumbers = Object.keys(verses).map(Number).sort((a, b) => a - b);
+            this.maxVerses = verseNumbers.length > 0 ? Math.max(...verseNumbers) : 1;
+            
+            const fromInput = document.getElementById('verse-from');
+            const toInput = document.getElementById('verse-to');
+            
+            fromInput.max = this.maxVerses;
+            toInput.max = this.maxVerses;
+            
+            this.currentFromVerse = 1;
+            this.currentToVerse = this.maxVerses;
+            
+            fromInput.value = this.currentFromVerse;
+            toInput.value = this.currentToVerse;
+            
+            this.updateSelectedVersesDisplay();
+        } catch (error) {
+            console.error('Erreur lors du chargement des versets:', error);
+            this.maxVerses = 1;
+        }
+    }
+
+    updateSelectedVersesDisplay() {
+        const bookName = bookNames.french[this.currentBook] || this.currentBook;
+        const versesList = document.getElementById('selected-verses-list');
+        
+        // Ajuster les valeurs si nécessaire
+        if (this.currentFromVerse > this.currentToVerse) {
+            this.currentToVerse = this.currentFromVerse;
+            document.getElementById('verse-to').value = this.currentToVerse;
+        }
+        
+        if (this.currentFromVerse > this.maxVerses) {
+            this.currentFromVerse = this.maxVerses;
+            document.getElementById('verse-from').value = this.currentFromVerse;
+        }
+        
+        if (this.currentToVerse > this.maxVerses) {
+            this.currentToVerse = this.maxVerses;
+            document.getElementById('verse-to').value = this.currentToVerse;
+        }
+        
+        if (this.currentFromVerse === this.currentToVerse) {
+            versesList.innerHTML = `<div class="verse-item">${bookName} ${this.currentChapter}:${this.currentFromVerse}</div>`;
+        } else {
+            versesList.innerHTML = `<div class="verse-item">${bookName} ${this.currentChapter}:${this.currentFromVerse}-${this.currentToVerse}</div>`;
+        }
     }
 
     openVerseSelection(targetField) {
         this.currentVerseTarget = targetField;
-        
-        // Récupérer le livre et chapitre actuel
-        if (bibleAppInstance && bibleAppInstance.currentBook && bibleAppInstance.currentChapter) {
-            const book = bibleAppInstance.currentBook;
-            const chapter = bibleAppInstance.currentChapter;
-            
-            // Charger les versets pour déterminer la plage disponible
-            getVerses(book, parseInt(chapter), 'french').then(verses => {
-                const verseNumbers = Object.keys(verses).map(Number).sort((a, b) => a - b);
-                const maxVerse = verseNumbers.length > 0 ? Math.max(...verseNumbers) : 1;
-                
-                document.getElementById('verse-from').value = 1;
-                document.getElementById('verse-to').value = maxVerse;
-                document.getElementById('verse-from').max = maxVerse;
-                document.getElementById('verse-to').max = maxVerse;
-                
-                this.updateSelectedVersesDisplay(book, chapter, 1, maxVerse);
-            });
-        }
-        
         document.getElementById('verse-selection-modal').style.display = 'block';
     }
 
-    updateSelectedVersesDisplay(book, chapter, fromVerse, toVerse) {
-        const bookName = bookNames.french[book] || book;
-        const versesList = document.getElementById('selected-verses-list');
-        
-        if (fromVerse === toVerse) {
-            versesList.innerHTML = `<div class="verse-item">${bookName} ${chapter}:${fromVerse}</div>`;
-        } else {
-            versesList.innerHTML = `<div class="verse-item">${bookName} ${chapter}:${fromVerse}-${toVerse}</div>`;
-        }
-    }
-
     confirmVerseSelection() {
-        const fromVerse = parseInt(document.getElementById('verse-from').value);
-        const toVerse = parseInt(document.getElementById('verse-to').value);
+        const bookName = bookNames.french[this.currentBook] || this.currentBook;
         
-        if (fromVerse > toVerse) {
-            alert('Le verset de début ne peut pas être supérieur au verset de fin');
-            return;
+        let verseRef;
+        if (this.currentFromVerse === this.currentToVerse) {
+            verseRef = `${bookName} ${this.currentChapter}:${this.currentFromVerse}`;
+        } else {
+            verseRef = `${bookName} ${this.currentChapter}:${this.currentFromVerse}-${this.currentToVerse}`;
         }
-
-        if (bibleAppInstance && bibleAppInstance.currentBook && bibleAppInstance.currentChapter) {
-            const book = bibleAppInstance.currentBook;
-            const chapter = bibleAppInstance.currentChapter;
-            const bookName = bookNames.french[book] || book;
-            
-            let verseRef;
-            if (fromVerse === toVerse) {
-                verseRef = `${bookName} ${chapter}:${fromVerse}`;
-            } else {
-                verseRef = `${bookName} ${chapter}:${fromVerse}-${toVerse}`;
-            }
-            
-            const targetElement = document.getElementById(this.currentVerseTarget);
-            if (targetElement) {
-                targetElement.value = verseRef;
-            }
-            
-            if (this.currentVerseTarget === 'pericopeRef') {
-                this.state.pericopeRef = verseRef;
-            } else if (this.currentVerseTarget && this.currentVerseTarget.startsWith('truth-')) {
-                const parts = this.currentVerseTarget.split('-');
-                const truthIndex = parseInt(parts[1]);
-                if (this.state.truths[truthIndex]) {
-                    this.state.truths[truthIndex].versesRef = verseRef;
-                    this.rerenderTruths();
-                }
+        
+        const targetElement = document.getElementById(this.currentVerseTarget);
+        if (targetElement) {
+            targetElement.value = verseRef;
+        }
+        
+        if (this.currentVerseTarget === 'pericopeRef') {
+            this.state.pericopeRef = verseRef;
+        } else if (this.currentVerseTarget && this.currentVerseTarget.startsWith('truth-')) {
+            const parts = this.currentVerseTarget.split('-');
+            const truthIndex = parseInt(parts[1]);
+            if (this.state.truths[truthIndex]) {
+                this.state.truths[truthIndex].versesRef = verseRef;
+                this.rerenderTruths();
             }
         }
         
