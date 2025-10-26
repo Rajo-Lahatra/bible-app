@@ -75,7 +75,8 @@ const TDICT = {
         selectVerses: "Sélectionner",
         selectedVerses: "Versets sélectionnés",
         selectBook: "Livre",
-        selectChapter: "Chapitre"
+        selectChapter: "Chapitre",
+        versesText: "Texte des versets"
     },
 
     fr: {
@@ -111,7 +112,7 @@ const TDICT = {
         christLead: "La Bonne Nouvelle pour nous aujourd'hui est la suivante :",
 
         conclTitle: "Conclusion",
-        conclLead: "En résumé, nous avons vu que :",
+        conclLead: "En résumé, nous avons visto que :",
         gloria: "À Dieu seul soit la gloire. Amen !",
 
         lblKey: "Déclaration (énoncé clé) *",
@@ -149,7 +150,8 @@ const TDICT = {
         selectVerses: "Sélectionner",
         selectedVerses: "Versets sélectionnés",
         selectBook: "Livre",
-        selectChapter: "Chapitre"
+        selectChapter: "Chapitre",
+        versesText: "Texte des versets"
     }
 };
 
@@ -189,6 +191,7 @@ class HomilyGeneratorUI {
         this.currentFromVerse = 1;
         this.currentToVerse = 1;
         this.maxVerses = 1;
+        this.currentVersesData = {};
         
         // Maintenant initialiser les truths après que this.state soit défini
         this.state.truths = [this.emptyTruth(1), this.emptyTruth(2)];
@@ -270,11 +273,13 @@ class HomilyGeneratorUI {
                     <textarea id="conclusionNotes" class="inp wide-input" placeholder="${t.uiNotesSummary}"></textarea>
                 </details>
 
+                <!-- BOUTON DE GÉNÉRATION RESTAURÉ -->
                 <div class="actions">
                     <button type="button" id="addTruth" class="btn-secondary">${t.uiAddTruth}</button>
                     <button type="button" id="generate" class="btn-primary">${t.uiGenerate}</button>
                 </div>
 
+                <!-- SECTION DE RÉSULTAT -->
                 <div id="output" class="output hidden">
                     <h3>${t.uiResult}</h3>
                     <div class="out-actions">
@@ -323,6 +328,12 @@ class HomilyGeneratorUI {
                                 <div id="selected-verses-list" class="verses-list">
                                     <div class="verse-item">Genèse 1:1-1</div>
                                 </div>
+                            </div>
+
+                            <!-- NOUVEAU: Affichage du texte des versets -->
+                            <div class="verses-text-display">
+                                <h4>${t.versesText}:</h4>
+                                <div id="verses-text-content" class="verses-text-content"></div>
                             </div>
                         </div>
                         
@@ -390,7 +401,9 @@ class HomilyGeneratorUI {
                 }
 
                 .verse-selection-modal .modal-content {
-                    max-width: 600px;
+                    max-width: 700px;
+                    max-height: 80vh;
+                    overflow-y: auto;
                 }
 
                 .book-chapter-selection {
@@ -414,7 +427,7 @@ class HomilyGeneratorUI {
                 }
 
                 .verses-list {
-                    max-height: 200px;
+                    max-height: 100px;
                     overflow-y: auto;
                     border: 1px solid #ddd;
                     padding: 0.5rem;
@@ -424,6 +437,36 @@ class HomilyGeneratorUI {
                 .verse-item {
                     padding: 0.25rem;
                     border-bottom: 1px solid #eee;
+                }
+
+                .verses-text-display {
+                    margin: 1rem 0;
+                }
+
+                .verses-text-content {
+                    max-height: 200px;
+                    overflow-y: auto;
+                    border: 1px solid #ddd;
+                    padding: 0.5rem;
+                    background: #f8f9fa;
+                    font-size: 0.9rem;
+                    line-height: 1.4;
+                }
+
+                .verse-text-item {
+                    margin-bottom: 0.5rem;
+                    padding-bottom: 0.5rem;
+                    border-bottom: 1px solid #eee;
+                }
+
+                .verse-text-item:last-child {
+                    border-bottom: none;
+                }
+
+                .verse-number {
+                    font-weight: bold;
+                    color: #2c5aa0;
+                    margin-right: 0.5rem;
                 }
 
                 .intercalary-notes {
@@ -456,6 +499,47 @@ class HomilyGeneratorUI {
                 .app-fieldset legend {
                     font-weight: bold;
                     padding: 0 0.5rem;
+                }
+
+                .actions {
+                    margin: 1.5rem 0;
+                    display: flex;
+                    gap: 1rem;
+                    justify-content: center;
+                }
+
+                .output {
+                    margin-top: 2rem;
+                    padding: 1.5rem;
+                    border: 1px solid #ddd;
+                    border-radius: 8px;
+                    background: #f9f9f9;
+                }
+
+                .output.hidden {
+                    display: none;
+                }
+
+                .out-actions {
+                    display: flex;
+                    gap: 0.5rem;
+                    margin-bottom: 1rem;
+                }
+
+                .code {
+                    width: 100%;
+                    font-family: 'Courier New', monospace;
+                    background: #f5f5f5;
+                    border: 1px solid #ddd;
+                    padding: 1rem;
+                    border-radius: 4px;
+                }
+
+                .preview {
+                    width: 100%;
+                    height: 400px;
+                    border: 1px solid #ddd;
+                    border-radius: 4px;
                 }
             </style>
         `;
@@ -519,6 +603,7 @@ class HomilyGeneratorUI {
             });
         }
 
+        // BOUTON DE GÉNÉRATION - RESTAURÉ
         const generateBtn = document.getElementById('generate');
         if (generateBtn) {
             generateBtn.addEventListener('click', () => {
@@ -564,11 +649,13 @@ class HomilyGeneratorUI {
         document.getElementById('verse-from').addEventListener('input', (e) => {
             this.currentFromVerse = parseInt(e.target.value) || 1;
             this.updateSelectedVersesDisplay();
+            this.displayVersesText();
         });
 
         document.getElementById('verse-to').addEventListener('input', (e) => {
             this.currentToVerse = parseInt(e.target.value) || 1;
             this.updateSelectedVersesDisplay();
+            this.displayVersesText();
         });
 
         window.addEventListener('click', (e) => {
@@ -606,6 +693,8 @@ class HomilyGeneratorUI {
     async loadVersesForChapter(book, chapter) {
         try {
             const verses = await getVerses(book, chapter, 'french');
+            this.currentVersesData = verses;
+            
             const verseNumbers = Object.keys(verses).map(Number).sort((a, b) => a - b);
             this.maxVerses = verseNumbers.length > 0 ? Math.max(...verseNumbers) : 1;
             
@@ -622,9 +711,11 @@ class HomilyGeneratorUI {
             toInput.value = this.currentToVerse;
             
             this.updateSelectedVersesDisplay();
+            this.displayVersesText();
         } catch (error) {
             console.error('Erreur lors du chargement des versets:', error);
             this.maxVerses = 1;
+            this.currentVersesData = {};
         }
     }
 
@@ -653,6 +744,30 @@ class HomilyGeneratorUI {
         } else {
             versesList.innerHTML = `<div class="verse-item">${bookName} ${this.currentChapter}:${this.currentFromVerse}-${this.currentToVerse}</div>`;
         }
+    }
+
+    displayVersesText() {
+        const textContainer = document.getElementById('verses-text-content');
+        
+        if (!this.currentVersesData || Object.keys(this.currentVersesData).length === 0) {
+            textContainer.innerHTML = '<div class="verse-text-item">Aucun texte disponible</div>';
+            return;
+        }
+        
+        let html = '';
+        
+        for (let verseNum = this.currentFromVerse; verseNum <= this.currentToVerse; verseNum++) {
+            if (this.currentVersesData[verseNum]) {
+                html += `
+                    <div class="verse-text-item">
+                        <span class="verse-number">${verseNum}</span>
+                        <span class="verse-text">${this.currentVersesData[verseNum]}</span>
+                    </div>
+                `;
+            }
+        }
+        
+        textContainer.innerHTML = html || '<div class="verse-text-item">Aucun texte disponible pour cette plage</div>';
     }
 
     openVerseSelection(targetField) {
