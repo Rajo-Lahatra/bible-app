@@ -32,7 +32,8 @@ const TDICT = {
         selectedVerses: "Versets sélectionnés",
         selectBook: "Livre",
         selectChapter: "Chapitre",
-        versesText: "Texte des versets"
+        versesText: "Texte des versets",
+        selectedVersesDisplay: "Versets sélectionnés pour la prédication"
     },
 
     fr: {
@@ -63,7 +64,8 @@ const TDICT = {
         selectedVerses: "Versets sélectionnés",
         selectBook: "Livre",
         selectChapter: "Chapitre",
-        versesText: "Texte des versets"
+        versesText: "Texte des versets",
+        selectedVersesDisplay: "Versets sélectionnés pour la prédication"
     }
 };
 
@@ -89,7 +91,7 @@ class FreeSermonGeneratorUI {
         this.state = {
             lang: "mg",
             theme: "",
-            pericopeRefs: [], // Tableau pour stocker plusieurs références de versets
+            pericopeRefs: [], // Tableau pour stocker plusieurs références de versets avec leur texte
             parts: [
                 {
                     title: "",
@@ -166,7 +168,10 @@ class FreeSermonGeneratorUI {
                         <div id="pericope-refs-list" class="pericope-refs-list">
                             ${this.state.pericopeRefs.map((ref, index) => `
                                 <div class="verse-ref-item" data-index="${index}">
-                                    <span class="verse-ref-text">${ref}</span>
+                                    <div class="verse-ref-content">
+                                        <strong class="verse-ref-text">${ref.reference}</strong>
+                                        <div class="verse-ref-verses">${ref.versesText}</div>
+                                    </div>
                                     <button type="button" class="btn-small btn-danger remove-verse-ref" data-index="${index}">${t.removeVerse}</button>
                                 </div>
                             `).join('')}
@@ -341,7 +346,7 @@ class FreeSermonGeneratorUI {
                 .verse-ref-item {
                     display: flex;
                     justify-content: space-between;
-                    align-items: center;
+                    align-items: flex-start;
                     padding: 0.75rem;
                     margin-bottom: 0.5rem;
                     background: white;
@@ -349,9 +354,26 @@ class FreeSermonGeneratorUI {
                     border: 1px solid #dee2e6;
                 }
 
+                .verse-ref-content {
+                    flex: 1;
+                    margin-right: 1rem;
+                }
+
                 .verse-ref-text {
                     font-weight: 500;
                     color: #2c5aa0;
+                    display: block;
+                    margin-bottom: 0.5rem;
+                }
+
+                .verse-ref-verses {
+                    font-size: 0.9rem;
+                    color: #555;
+                    line-height: 1.4;
+                    background: #f8f9fa;
+                    padding: 0.5rem;
+                    border-radius: 4px;
+                    border-left: 3px solid #2c5aa0;
                 }
 
                 .no-verses {
@@ -652,8 +674,11 @@ class FreeSermonGeneratorUI {
         partsList.innerHTML = this.state.parts.map((part, index) => this.renderPartCard(part, index)).join('');
     }
 
-    addPericopeRef(verseRef) {
-        this.state.pericopeRefs.push(verseRef);
+    addPericopeRef(verseRef, versesText) {
+        this.state.pericopeRefs.push({
+            reference: verseRef,
+            versesText: versesText
+        });
         this.updatePericopeDisplay();
     }
 
@@ -669,7 +694,10 @@ class FreeSermonGeneratorUI {
         if (pericopeRefsList) {
             pericopeRefsList.innerHTML = this.state.pericopeRefs.map((ref, index) => `
                 <div class="verse-ref-item" data-index="${index}">
-                    <span class="verse-ref-text">${ref}</span>
+                    <div class="verse-ref-content">
+                        <strong class="verse-ref-text">${ref.reference}</strong>
+                        <div class="verse-ref-verses">${ref.versesText}</div>
+                    </div>
                     <button type="button" class="btn-small btn-danger remove-verse-ref" data-index="${index}">${this.T().removeVerse}</button>
                 </div>
             `).join('');
@@ -861,8 +889,16 @@ class FreeSermonGeneratorUI {
             verseRef = `${bookName} ${this.currentChapter}:${this.currentFromVerse}-${this.currentToVerse}`;
         }
         
-        // Ajouter la référence à la péricope
-        this.addPericopeRef(verseRef);
+        // Récupérer le texte des versets sélectionnés
+        let versesText = '';
+        for (let verseNum = this.currentFromVerse; verseNum <= this.currentToVerse; verseNum++) {
+            if (this.currentVersesData[verseNum]) {
+                versesText += `<strong>${verseNum}</strong> ${this.currentVersesData[verseNum]}\n`;
+            }
+        }
+        
+        // Ajouter la référence et le texte à la péricope
+        this.addPericopeRef(verseRef, versesText);
         
         document.getElementById('verse-selection-modal').style.display = 'none';
     }
@@ -945,13 +981,16 @@ class FreeSermonGeneratorUI {
         // Titre + Thème
         lines.push(`# ${this.state.theme || t.uiTitle}\n`);
         
-        // Péricope
+        // Péricope avec texte des versets
         if (this.state.pericopeRefs.length > 0) {
             lines.push(`## ${t.uiPericope}`);
+            
+            // Afficher chaque référence avec son texte
             this.state.pericopeRefs.forEach(ref => {
-                lines.push(`- ${ref}`);
+                lines.push(`### ${ref.reference}`);
+                lines.push(ref.versesText);
+                lines.push('');
             });
-            lines.push('');
         }
         
         // Parties
@@ -969,20 +1008,21 @@ class FreeSermonGeneratorUI {
 
     mdToSimpleHtml(md) {
         let html = md
+            .replace(/^### (.*)$/gm, '<h3>$1</h3>')
             .replace(/^## (.*)$/gm, '<h2>$1</h2>')
-            .replace(/^# (.*)$/gm, '<h1>$1</h1>')
-            .replace(/^- (.*)$/gm, '<li>$1</li>');
+            .replace(/^# (.*)$/gm, '<h1>$1</h1>');
             
+        // Gérer le texte des versets (qui contient des numéros en gras)
+        html = html.replace(/(\d+) (.*?)(?=\n\n|\n###|$)/gs, (match, verseNum, verseText) => {
+            return `<p><strong>${verseNum}</strong> ${verseText}</p>`;
+        });
+        
+        // Gérer les paragraphes normaux
         html = html.split('\n').map(line => {
-            if (line.trim() === '') return '<p></p>';
-            if (line.startsWith('<h') || line.startsWith('<li>')) return line;
+            if (line.trim() === '') return '';
+            if (line.startsWith('<h') || line.startsWith('<p>')) return line;
             return `<p>${line}</p>`;
         }).join('\n');
-        
-        html = html.replace(/(<p><li>.*?<\/li><\/p>\n?)+/gs, (match) => {
-            const items = match.replace(/<\/?p>/g, '');
-            return `<ul>${items}</ul>`;
-        });
         
         return `<!DOCTYPE html>
 <html lang="${this.state.lang}">
@@ -994,9 +1034,9 @@ class FreeSermonGeneratorUI {
         body { font-family: Arial, sans-serif; line-height: 1.6; margin: 2rem; }
         h1 { color: #2c3e50; border-bottom: 2px solid #3498db; padding-bottom: 0.5rem; }
         h2 { color: #3498db; margin-top: 2rem; }
+        h3 { color: #2980b9; margin-top: 1.5rem; }
         strong { color: #e74c3c; }
-        ul { margin: 1rem 0; padding-left: 2rem; }
-        li { margin: 0.5rem 0; }
+        p { margin: 0.5rem 0; }
     </style>
 </head>
 <body>${html}</body>
