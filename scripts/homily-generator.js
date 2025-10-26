@@ -112,7 +112,7 @@ const TDICT = {
         christLead: "La Bonne Nouvelle pour nous aujourd'hui est la suivante :",
 
         conclTitle: "Conclusion",
-        conclLead: "En résumé, nous avons visto que :",
+        conclLead: "En résumé, nous avons vu que :",
         gloria: "À Dieu seul soit la gloire. Amen !",
 
         lblKey: "Déclaration (énoncé clé) *",
@@ -179,6 +179,7 @@ class HomilyGeneratorUI {
             lang: "mg",
             pericopeRef: "",
             pericopeSummary: "",
+            pericopeText: "", // NOUVEAU: Texte des versets de la péricope
             truths: [],
             conclusionNotes: "",
         };
@@ -210,6 +211,7 @@ class HomilyGeneratorUI {
             title: t.truthTitle(i),
             keyStatement: "",
             versesRef: "",
+            versesText: "", // NOUVEAU: Texte des versets pour chaque vérité
             explanation: "",
             appD1: "",
             appD2: "",
@@ -217,7 +219,7 @@ class HomilyGeneratorUI {
             reflection: "",
             exhortation: "",
             christology: "",
-            intercalaryNotes: "" // Notes intercalaires ajoutées
+            intercalaryNotes: ""
         };
     }
 
@@ -252,17 +254,27 @@ class HomilyGeneratorUI {
                     </select>
                 </div>
 
-                <div class="grid2">
-                    <label>
-                        ${t.uiPericope}
-                        <input id="pericopeRef" class="inp wide-input" placeholder="${t.phVerses}" />
-                        <button type="button" class="btn-small btn-secondary" id="select-pericope">${t.selectVerses}</button>
-                    </label>
+                <div class="pericope-section">
+                    <div class="grid2">
+                        <label>
+                            ${t.uiPericope}
+                            <input id="pericopeRef" class="inp wide-input" placeholder="${t.phVerses}" value="${this.state.pericopeRef}" />
+                            <button type="button" class="btn-small btn-secondary" id="select-pericope">${t.selectVerses}</button>
+                        </label>
 
-                    <label>
-                        ${t.uiSummary}
-                        <input id="pericopeSummary" class="inp wide-input" placeholder="${t.introSummaryLead} …" />
-                    </label>
+                        <label>
+                            ${t.uiSummary}
+                            <input id="pericopeSummary" class="inp wide-input" placeholder="${t.introSummaryLead} …" value="${this.state.pericopeSummary}" />
+                        </label>
+                    </div>
+                    
+                    <!-- AFFICHAGE DU TEXTE DE LA PÉRICOPE DANS LA FENÊTRE PRINCIPALE -->
+                    ${this.state.pericopeText ? `
+                        <div class="verses-display-main">
+                            <h4>${t.versesText}:</h4>
+                            <div class="verses-text-content">${this.state.pericopeText}</div>
+                        </div>
+                    ` : ''}
                 </div>
 
                 <div id="truths-list" class="truths-stack"></div>
@@ -270,10 +282,10 @@ class HomilyGeneratorUI {
                 <!-- Notes de conclusion déplacées entre les Fahamarinana -->
                 <details class="note intercalary-notes">
                     <summary>${t.uiNotesSummary}</summary>
-                    <textarea id="conclusionNotes" class="inp wide-input" placeholder="${t.uiNotesSummary}"></textarea>
+                    <textarea id="conclusionNotes" class="inp wide-input" placeholder="${t.uiNotesSummary}">${this.state.conclusionNotes}</textarea>
                 </details>
 
-                <!-- BOUTON DE GÉNÉRATION RESTAURÉ -->
+                <!-- BOUTON DE GÉNÉRATION BIEN VISIBLE -->
                 <div class="actions">
                     <button type="button" id="addTruth" class="btn-secondary">${t.uiAddTruth}</button>
                     <button type="button" id="generate" class="btn-primary">${t.uiGenerate}</button>
@@ -330,7 +342,7 @@ class HomilyGeneratorUI {
                                 </div>
                             </div>
 
-                            <!-- NOUVEAU: Affichage du texte des versets -->
+                            <!-- Affichage du texte des versets dans la modale -->
                             <div class="verses-text-display">
                                 <h4>${t.versesText}:</h4>
                                 <div id="verses-text-content" class="verses-text-content"></div>
@@ -349,6 +361,8 @@ class HomilyGeneratorUI {
                 .homily-generator {
                     max-width: 100%;
                     padding: 1rem;
+                    height: calc(100vh - 100px);
+                    overflow-y: auto;
                 }
 
                 .wide-input {
@@ -358,6 +372,28 @@ class HomilyGeneratorUI {
 
                 .small-input {
                     width: 80px;
+                }
+
+                .pericope-section {
+                    margin-bottom: 2rem;
+                    padding: 1rem;
+                    background: #f8f9fa;
+                    border-radius: 8px;
+                    border: 1px solid #e9ecef;
+                }
+
+                .verses-display-main {
+                    margin-top: 1rem;
+                    padding: 1rem;
+                    background: white;
+                    border-radius: 6px;
+                    border: 1px solid #dee2e6;
+                }
+
+                .verses-display-main h4 {
+                    margin: 0 0 0.5rem 0;
+                    color: #2c5aa0;
+                    font-size: 1rem;
                 }
 
                 .truth-card {
@@ -502,10 +538,16 @@ class HomilyGeneratorUI {
                 }
 
                 .actions {
-                    margin: 1.5rem 0;
+                    margin: 2rem 0;
                     display: flex;
                     gap: 1rem;
                     justify-content: center;
+                    position: sticky;
+                    bottom: 0;
+                    background: white;
+                    padding: 1rem;
+                    border-top: 2px solid #e9ecef;
+                    z-index: 100;
                 }
 
                 .output {
@@ -540,6 +582,22 @@ class HomilyGeneratorUI {
                     height: 400px;
                     border: 1px solid #ddd;
                     border-radius: 4px;
+                }
+
+                .truth-verses-display {
+                    margin: 0.5rem 0;
+                    padding: 0.75rem;
+                    background: white;
+                    border-radius: 4px;
+                    border: 1px solid #e9ecef;
+                    font-size: 0.9rem;
+                    line-height: 1.4;
+                }
+
+                .truth-verses-display h5 {
+                    margin: 0 0 0.5rem 0;
+                    color: #2c5aa0;
+                    font-size: 0.9rem;
                 }
             </style>
         `;
@@ -603,7 +661,7 @@ class HomilyGeneratorUI {
             });
         }
 
-        // BOUTON DE GÉNÉRATION - RESTAURÉ
+        // BOUTON DE GÉNÉRATION - BIEN VISIBLE MAINTENANT
         const generateBtn = document.getElementById('generate');
         if (generateBtn) {
             generateBtn.addEventListener('click', () => {
@@ -770,6 +828,27 @@ class HomilyGeneratorUI {
         textContainer.innerHTML = html || '<div class="verse-text-item">Aucun texte disponible pour cette plage</div>';
     }
 
+    formatVersesText(versesData, fromVerse, toVerse) {
+        if (!versesData || Object.keys(versesData).length === 0) {
+            return 'Aucun texte disponible';
+        }
+        
+        let html = '';
+        
+        for (let verseNum = fromVerse; verseNum <= toVerse; verseNum++) {
+            if (versesData[verseNum]) {
+                html += `
+                    <div class="verse-text-item">
+                        <span class="verse-number">${verseNum}</span>
+                        <span class="verse-text">${versesData[verseNum]}</span>
+                    </div>
+                `;
+            }
+        }
+        
+        return html || '<div class="verse-text-item">Aucun texte disponible pour cette plage</div>';
+    }
+
     openVerseSelection(targetField) {
         this.currentVerseTarget = targetField;
         document.getElementById('verse-selection-modal').style.display = 'block';
@@ -785,6 +864,8 @@ class HomilyGeneratorUI {
             verseRef = `${bookName} ${this.currentChapter}:${this.currentFromVerse}-${this.currentToVerse}`;
         }
         
+        const versesText = this.formatVersesText(this.currentVersesData, this.currentFromVerse, this.currentToVerse);
+        
         const targetElement = document.getElementById(this.currentVerseTarget);
         if (targetElement) {
             targetElement.value = verseRef;
@@ -792,16 +873,42 @@ class HomilyGeneratorUI {
         
         if (this.currentVerseTarget === 'pericopeRef') {
             this.state.pericopeRef = verseRef;
+            this.state.pericopeText = versesText;
+            // Mettre à jour l'affichage dans la fenêtre principale
+            this.updatePericopeDisplay();
         } else if (this.currentVerseTarget && this.currentVerseTarget.startsWith('truth-')) {
             const parts = this.currentVerseTarget.split('-');
             const truthIndex = parseInt(parts[1]);
             if (this.state.truths[truthIndex]) {
                 this.state.truths[truthIndex].versesRef = verseRef;
+                this.state.truths[truthIndex].versesText = versesText;
                 this.rerenderTruths();
             }
         }
         
         document.getElementById('verse-selection-modal').style.display = 'none';
+    }
+
+    updatePericopeDisplay() {
+        // Mettre à jour l'affichage de la péricope dans la fenêtre principale
+        const pericopeSection = document.querySelector('.pericope-section');
+        if (pericopeSection) {
+            const existingDisplay = pericopeSection.querySelector('.verses-display-main');
+            if (existingDisplay) {
+                existingDisplay.remove();
+            }
+            
+            if (this.state.pericopeText) {
+                const t = this.T();
+                const displayDiv = document.createElement('div');
+                displayDiv.className = 'verses-display-main';
+                displayDiv.innerHTML = `
+                    <h4>${t.versesText}:</h4>
+                    <div class="verses-text-content">${this.state.pericopeText}</div>
+                `;
+                pericopeSection.appendChild(displayDiv);
+            }
+        }
     }
 
     renderTruthCard(truth, idx) {
@@ -827,6 +934,14 @@ class HomilyGeneratorUI {
                 <input class="inp wide-input versesRef" placeholder="${t.phVerses}" value="${truth.versesRef || ''}" />
                 <button type="button" class="btn-small btn-secondary select-verses" data-index="${idx}">${t.selectVerses}</button>
             </label>
+
+            <!-- AFFICHAGE DU TEXTE DES VERSETS DANS LA FENÊTRE PRINCIPALE POUR CHAQUE VÉRITÉ -->
+            ${truth.versesText ? `
+                <div class="truth-verses-display">
+                    <h5>${t.versesText}:</h5>
+                    <div class="verses-text-content">${truth.versesText}</div>
+                </div>
+            ` : ''}
 
             <label>${t.lblExplain}
                 <textarea class="inp wide-input explanation" placeholder="${t.explainLead} ...">${truth.explanation || ''}</textarea>
