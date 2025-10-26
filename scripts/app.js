@@ -24,6 +24,7 @@ import {
     deleteHighlight
 } from './supabase-client.js';
 import { initHomilyGenerator } from './homily-generator.js';
+import { initFreeSermonGenerator } from './free-sermon-generator.js';
 
 class BibleApp {
     constructor() {
@@ -331,6 +332,10 @@ class BibleApp {
                 document.getElementById('homily-section').style.display = 'none';
                 document.body.style.overflow = 'auto';
             }
+            if (e.target.id === 'free-sermon-section') {
+                document.getElementById('free-sermon-section').style.display = 'none';
+                document.body.style.overflow = 'auto';
+            }
         });
 
         document.querySelectorAll('.tool-btn').forEach(btn => {
@@ -384,9 +389,20 @@ class BibleApp {
             this.openHomilyTool();
         });
 
+        // Outil de prédication libre
+        document.getElementById('show-free-sermon-tool').addEventListener('click', () => {
+            this.openFreeSermonTool();
+        });
+
         // Fermeture de la modale homélie
         document.querySelector('#homily-section .close').addEventListener('click', () => {
             document.getElementById('homily-section').style.display = 'none';
+            document.body.style.overflow = 'auto';
+        });
+
+        // Fermeture de la modale prédication libre
+        document.querySelector('#free-sermon-section .close').addEventListener('click', () => {
+            document.getElementById('free-sermon-section').style.display = 'none';
             document.body.style.overflow = 'auto';
         });
 
@@ -424,6 +440,35 @@ class BibleApp {
             } catch (error) {
                 console.error('Erreur lors de l\'initialisation de l\'outil homélie:', error);
                 this.showMessage('Erreur lors du chargement de l\'outil homélie', 'error');
+            }
+        }, 100);
+    }
+
+    openFreeSermonTool() {
+        if (!this.currentUser) {
+            this.showMessage('Veuillez vous connecter pour utiliser l\'outil de prédication libre', 'error');
+            this.openAuthModal('login');
+            return;
+        }
+        
+        // Créer une nouvelle modale ou réutiliser une existante
+        const freeSermonContainer = document.getElementById('free-sermon-generator');
+        if (!freeSermonContainer) {
+            console.error('Conteneur free-sermon-generator non trouvé');
+            return;
+        }
+        
+        // Afficher la modale
+        document.getElementById('free-sermon-section').style.display = 'block';
+        document.body.style.overflow = 'hidden';
+        
+        // Initialiser le générateur de sermon libre
+        setTimeout(() => {
+            try {
+                initFreeSermonGenerator(this);
+            } catch (error) {
+                console.error('Erreur lors de l\'initialisation de l\'outil sermon libre:', error);
+                this.showMessage('Erreur lors du chargement de l\'outil sermon libre', 'error');
             }
         }, 100);
     }
