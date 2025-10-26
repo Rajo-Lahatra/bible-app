@@ -179,7 +179,7 @@ class HomilyGeneratorUI {
             lang: "mg",
             pericopeRef: "",
             pericopeSummary: "",
-            pericopeText: "", // NOUVEAU: Texte des versets de la péricope
+            pericopeText: "",
             truths: [],
             conclusionNotes: "",
         };
@@ -211,7 +211,7 @@ class HomilyGeneratorUI {
             title: t.truthTitle(i),
             keyStatement: "",
             versesRef: "",
-            versesText: "", // NOUVEAU: Texte des versets pour chaque vérité
+            versesText: "",
             explanation: "",
             appD1: "",
             appD2: "",
@@ -254,6 +254,12 @@ class HomilyGeneratorUI {
                     </select>
                 </div>
 
+                <!-- BOUTONS D'ACTION EN HAUT -->
+                <div class="actions-top">
+                    <button type="button" id="addTruth" class="btn-secondary">${t.uiAddTruth}</button>
+                    <button type="button" id="generate" class="btn-primary">${t.uiGenerate}</button>
+                </div>
+
                 <div class="pericope-section">
                     <div class="grid2">
                         <label>
@@ -284,12 +290,6 @@ class HomilyGeneratorUI {
                     <summary>${t.uiNotesSummary}</summary>
                     <textarea id="conclusionNotes" class="inp wide-input" placeholder="${t.uiNotesSummary}">${this.state.conclusionNotes}</textarea>
                 </details>
-
-                <!-- BOUTON DE GÉNÉRATION BIEN VISIBLE -->
-                <div class="actions">
-                    <button type="button" id="addTruth" class="btn-secondary">${t.uiAddTruth}</button>
-                    <button type="button" id="generate" class="btn-primary">${t.uiGenerate}</button>
-                </div>
 
                 <!-- SECTION DE RÉSULTAT -->
                 <div id="output" class="output hidden">
@@ -372,6 +372,48 @@ class HomilyGeneratorUI {
 
                 .small-input {
                     width: 80px;
+                }
+
+                /* BOUTONS EN HAUT - STYLE AMÉLIORÉ */
+                .actions-top {
+                    margin: 1.5rem 0;
+                    display: flex;
+                    gap: 1rem;
+                    justify-content: flex-start;
+                    padding: 1rem;
+                    background: #f8f9fa;
+                    border-radius: 8px;
+                    border: 1px solid #e9ecef;
+                }
+
+                .actions-top .btn-primary {
+                    background: #007bff;
+                    color: white;
+                    border: none;
+                    padding: 0.75rem 1.5rem;
+                    border-radius: 6px;
+                    font-weight: bold;
+                    cursor: pointer;
+                    transition: background 0.3s;
+                }
+
+                .actions-top .btn-primary:hover {
+                    background: #0056b3;
+                }
+
+                .actions-top .btn-secondary {
+                    background: #6c757d;
+                    color: white;
+                    border: none;
+                    padding: 0.75rem 1.5rem;
+                    border-radius: 6px;
+                    font-weight: bold;
+                    cursor: pointer;
+                    transition: background 0.3s;
+                }
+
+                .actions-top .btn-secondary:hover {
+                    background: #545b62;
                 }
 
                 .pericope-section {
@@ -537,19 +579,6 @@ class HomilyGeneratorUI {
                     padding: 0 0.5rem;
                 }
 
-                .actions {
-                    margin: 2rem 0;
-                    display: flex;
-                    gap: 1rem;
-                    justify-content: center;
-                    position: sticky;
-                    bottom: 0;
-                    background: white;
-                    padding: 1rem;
-                    border-top: 2px solid #e9ecef;
-                    z-index: 100;
-                }
-
                 .output {
                     margin-top: 2rem;
                     padding: 1.5rem;
@@ -605,7 +634,7 @@ class HomilyGeneratorUI {
 
     getBookOptions() {
         return books.map(book => {
-            const bookName = bookNames.french[book] || book;
+            const bookName = this.state.lang === 'mg' ? bookNames.malagasy[book] : bookNames.french[book];
             return `<option value="${book}">${bookName}</option>`;
         }).join('');
     }
@@ -627,6 +656,8 @@ class HomilyGeneratorUI {
                 this.state.lang = e.target.value;
                 this.updateUITexts();
                 this.rerenderTruths();
+                // Recharger les chapitres avec la nouvelle langue
+                this.loadChaptersForBook(this.currentBook);
             });
         }
 
@@ -652,7 +683,7 @@ class HomilyGeneratorUI {
             });
         }
 
-        // Boutons d'actions
+        // Boutons d'actions EN HAUT
         const addTruthBtn = document.getElementById('addTruth');
         if (addTruthBtn) {
             addTruthBtn.addEventListener('click', () => {
@@ -661,7 +692,7 @@ class HomilyGeneratorUI {
             });
         }
 
-        // BOUTON DE GÉNÉRATION - BIEN VISIBLE MAINTENANT
+        // BOUTON DE GÉNÉRATION EN HAUT - MAINTENANT BIEN VISIBLE
         const generateBtn = document.getElementById('generate');
         if (generateBtn) {
             generateBtn.addEventListener('click', () => {
@@ -730,7 +761,8 @@ class HomilyGeneratorUI {
         const chapterSelect = document.getElementById('verse-chapter-select');
         
         try {
-            const chapters = await getChapters(book, 'french');
+            // Utiliser la langue sélectionnée pour charger les chapitres
+            const chapters = await getChapters(book, this.state.lang === 'mg' ? 'malagasy' : 'french');
             chapterSelect.innerHTML = '';
             
             chapters.forEach(chapter => {
@@ -750,7 +782,8 @@ class HomilyGeneratorUI {
 
     async loadVersesForChapter(book, chapter) {
         try {
-            const verses = await getVerses(book, chapter, 'french');
+            // Utiliser la langue sélectionnée pour charger les versets
+            const verses = await getVerses(book, chapter, this.state.lang === 'mg' ? 'malagasy' : 'french');
             this.currentVersesData = verses;
             
             const verseNumbers = Object.keys(verses).map(Number).sort((a, b) => a - b);
@@ -778,7 +811,11 @@ class HomilyGeneratorUI {
     }
 
     updateSelectedVersesDisplay() {
-        const bookName = bookNames.french[this.currentBook] || this.currentBook;
+        // Utiliser les noms de livres dans la langue sélectionnée
+        const bookName = this.state.lang === 'mg' ? 
+            bookNames.malagasy[this.currentBook] : 
+            bookNames.french[this.currentBook];
+        
         const versesList = document.getElementById('selected-verses-list');
         
         // Ajuster les valeurs si nécessaire
@@ -855,7 +892,10 @@ class HomilyGeneratorUI {
     }
 
     confirmVerseSelection() {
-        const bookName = bookNames.french[this.currentBook] || this.currentBook;
+        // Utiliser les noms de livres dans la langue sélectionnée
+        const bookName = this.state.lang === 'mg' ? 
+            bookNames.malagasy[this.currentBook] : 
+            bookNames.french[this.currentBook];
         
         let verseRef;
         if (this.currentFromVerse === this.currentToVerse) {
@@ -1072,6 +1112,13 @@ class HomilyGeneratorUI {
         
         // Mettre à jour les placeholders et labels
         this.rerenderTruths();
+        
+        // Mettre à jour les options des livres
+        const bookSelect = document.getElementById('verse-book-select');
+        if (bookSelect) {
+            bookSelect.innerHTML = this.getBookOptions();
+            bookSelect.value = this.currentBook;
+        }
     }
 
     generateOutput() {
