@@ -60,6 +60,7 @@ const TDICT = {
         actUp: "▲",
         actDown: "▼",
         actRemove: "Supprimer",
+        removeDim: "×",
 
         lblExplainOut: "Fanazavana :",
         lblAppOut: "Fampiharana :",
@@ -67,6 +68,12 @@ const TDICT = {
         lblExhortOut: "Fitaomana :",
         lblChristOut: "Kristolojia :",
         lblVersesOut: "Andininy :",
+
+        verseSelectionTitle: "Sélection des versets",
+        verseFrom: "Du verset",
+        verseTo: "au verset",
+        selectVerses: "Sélectionner",
+        selectedVerses: "Versets sélectionnés"
     },
 
     fr: {
@@ -125,6 +132,7 @@ const TDICT = {
         actUp: "▲",
         actDown: "▼",
         actRemove: "Supprimer",
+        removeDim: "×",
 
         lblExplainOut: "Explication :",
         lblAppOut: "Application :",
@@ -132,6 +140,12 @@ const TDICT = {
         lblExhortOut: "Exhortation :",
         lblChristOut: "Christologie :",
         lblVersesOut: "Verset(s) :",
+
+        verseSelectionTitle: "Sélection des versets",
+        verseFrom: "Du verset",
+        verseTo: "au verset",
+        selectVerses: "Sélectionner",
+        selectedVerses: "Versets sélectionnés"
     }
 };
 
@@ -165,6 +179,7 @@ class HomilyGeneratorUI {
         
         this.currentVerseTarget = null;
         this.currentTruthIndex = null;
+        this.selectedVerses = {};
         
         // Maintenant initialiser les truths après que this.state soit défini
         this.state.truths = [this.emptyTruth(1), this.emptyTruth(2)];
@@ -190,6 +205,7 @@ class HomilyGeneratorUI {
             reflection: "",
             exhortation: "",
             christology: "",
+            intercalaryNotes: "" // Notes intercalaires ajoutées
         };
     }
 
@@ -226,27 +242,28 @@ class HomilyGeneratorUI {
                 <div class="grid2">
                     <label>
                         ${t.uiPericope}
-                        <input id="pericopeRef" class="inp" placeholder="${t.phVerses}" />
-                        <button type="button" class="btn-small btn-secondary" id="select-pericope">Sélectionner</button>
+                        <input id="pericopeRef" class="inp wide-input" placeholder="${t.phVerses}" />
+                        <button type="button" class="btn-small btn-secondary" id="select-pericope">${t.selectVerses}</button>
                     </label>
 
                     <label>
                         ${t.uiSummary}
-                        <input id="pericopeSummary" class="inp" placeholder="${t.introSummaryLead} …" />
+                        <input id="pericopeSummary" class="inp wide-input" placeholder="${t.introSummaryLead} …" />
                     </label>
                 </div>
 
-                <details class="note">
-                    <summary>Notes de conclusion (facultatif)</summary>
-                    <textarea id="conclusionNotes" class="inp" placeholder="${t.uiNotesSummary}"></textarea>
+                <div id="truths-list" class="truths-stack"></div>
+
+                <!-- Notes de conclusion déplacées entre les Fahamarinana -->
+                <details class="note intercalary-notes">
+                    <summary>${t.uiNotesSummary}</summary>
+                    <textarea id="conclusionNotes" class="inp wide-input" placeholder="${t.uiNotesSummary}"></textarea>
                 </details>
 
                 <div class="actions">
                     <button type="button" id="addTruth" class="btn-secondary">${t.uiAddTruth}</button>
                     <button type="button" id="generate" class="btn-primary">${t.uiGenerate}</button>
                 </div>
-
-                <div id="truths-list" class="truths-stack"></div>
 
                 <div id="output" class="output hidden">
                     <h3>${t.uiResult}</h3>
@@ -261,7 +278,151 @@ class HomilyGeneratorUI {
                         <iframe id="htmlPreview" class="preview"></iframe>
                     </details>
                 </div>
+
+                <!-- Modal pour la sélection des versets -->
+                <div id="verse-selection-modal" class="modal verse-selection-modal">
+                    <div class="modal-content">
+                        <span class="close">&times;</span>
+                        <h3>${t.verseSelectionTitle}</h3>
+                        
+                        <div class="verse-selection-controls">
+                            <div class="verse-range">
+                                <label>${t.verseFrom}
+                                    <input type="number" id="verse-from" min="1" value="1" class="inp small-input">
+                                </label>
+                                <label>${t.verseTo}
+                                    <input type="number" id="verse-to" min="1" value="1" class="inp small-input">
+                                </label>
+                            </div>
+                            
+                            <div class="selected-verses-display">
+                                <h4>${t.selectedVerses}:</h4>
+                                <div id="selected-verses-list" class="verses-list"></div>
+                            </div>
+                        </div>
+                        
+                        <div class="modal-actions">
+                            <button type="button" id="confirm-verse-selection" class="btn-primary">${t.selectVerses}</button>
+                            <button type="button" id="cancel-verse-selection" class="btn-secondary">Annuler</button>
+                        </div>
+                    </div>
+                </div>
             </div>
+
+            <style>
+                .homily-generator {
+                    max-width: 100%;
+                    padding: 1rem;
+                }
+
+                .wide-input {
+                    width: 100% !important;
+                    min-width: 300px;
+                }
+
+                .small-input {
+                    width: 80px;
+                }
+
+                .truth-card {
+                    border: 1px solid #ddd;
+                    border-radius: 8px;
+                    padding: 1.5rem;
+                    margin: 1rem 0;
+                    background: #f9f9f9;
+                }
+
+                .truth-card__head {
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    margin-bottom: 1rem;
+                }
+
+                .truth-card__actions {
+                    display: flex;
+                    gap: 0.5rem;
+                }
+
+                .dimension-row {
+                    display: flex;
+                    align-items: center;
+                    gap: 0.5rem;
+                    margin-bottom: 0.5rem;
+                }
+
+                .dimension-row .inp {
+                    flex: 1;
+                }
+
+                .remove-dimension {
+                    width: 30px;
+                    height: 30px;
+                    padding: 0;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                }
+
+                .verse-selection-modal .modal-content {
+                    max-width: 600px;
+                }
+
+                .verse-range {
+                    display: flex;
+                    gap: 1rem;
+                    margin-bottom: 1rem;
+                }
+
+                .selected-verses-display {
+                    margin: 1rem 0;
+                }
+
+                .verses-list {
+                    max-height: 200px;
+                    overflow-y: auto;
+                    border: 1px solid #ddd;
+                    padding: 0.5rem;
+                    background: white;
+                }
+
+                .verse-item {
+                    padding: 0.25rem;
+                    border-bottom: 1px solid #eee;
+                }
+
+                .intercalary-notes {
+                    margin: 1rem 0;
+                    background: #fff3cd;
+                    border-color: #ffeaa7;
+                }
+
+                .intercalary-notes summary {
+                    font-weight: bold;
+                    color: #856404;
+                }
+
+                label {
+                    display: block;
+                    margin-bottom: 1rem;
+                }
+
+                textarea.inp {
+                    min-height: 80px;
+                    resize: vertical;
+                }
+
+                .app-fieldset {
+                    border: 1px solid #ccc;
+                    padding: 1rem;
+                    margin: 1rem 0;
+                }
+
+                .app-fieldset legend {
+                    font-weight: bold;
+                    padding: 0 0.5rem;
+                }
+            </style>
         `;
     }
 
@@ -322,51 +483,111 @@ class HomilyGeneratorUI {
                 this.generateOutput();
             });
         }
+
+        // Gestion de la modale de sélection des versets
+        this.setupVerseSelectionModal();
+    }
+
+    setupVerseSelectionModal() {
+        const modal = document.getElementById('verse-selection-modal');
+        const closeBtn = modal.querySelector('.close');
+        const cancelBtn = document.getElementById('cancel-verse-selection');
+        const confirmBtn = document.getElementById('confirm-verse-selection');
+
+        closeBtn.addEventListener('click', () => {
+            modal.style.display = 'none';
+        });
+
+        cancelBtn.addEventListener('click', () => {
+            modal.style.display = 'none';
+        });
+
+        confirmBtn.addEventListener('click', () => {
+            this.confirmVerseSelection();
+        });
+
+        window.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                modal.style.display = 'none';
+            }
+        });
     }
 
     openVerseSelection(targetField) {
-        if (bibleAppInstance) {
-            this.currentVerseTarget = targetField;
-            document.getElementById('homily-section').style.display = 'none';
+        this.currentVerseTarget = targetField;
+        
+        // Récupérer le livre et chapitre actuel
+        if (bibleAppInstance && bibleAppInstance.currentBook && bibleAppInstance.currentChapter) {
+            const book = bibleAppInstance.currentBook;
+            const chapter = bibleAppInstance.currentChapter;
             
-            // Ouvrir la sélection de livre
-            bibleAppInstance.openBookSelectionModal();
-            
-            // Écouter la fermeture de la sélection
-            this.setupVerseSelectionListener();
+            // Charger les versets pour déterminer la plage disponible
+            getVerses(book, parseInt(chapter), 'french').then(verses => {
+                const verseNumbers = Object.keys(verses).map(Number).sort((a, b) => a - b);
+                const maxVerse = verseNumbers.length > 0 ? Math.max(...verseNumbers) : 1;
+                
+                document.getElementById('verse-from').value = 1;
+                document.getElementById('verse-to').value = maxVerse;
+                document.getElementById('verse-from').max = maxVerse;
+                document.getElementById('verse-to').max = maxVerse;
+                
+                this.updateSelectedVersesDisplay(book, chapter, 1, maxVerse);
+            });
+        }
+        
+        document.getElementById('verse-selection-modal').style.display = 'block';
+    }
+
+    updateSelectedVersesDisplay(book, chapter, fromVerse, toVerse) {
+        const bookName = bookNames.french[book] || book;
+        const versesList = document.getElementById('selected-verses-list');
+        
+        if (fromVerse === toVerse) {
+            versesList.innerHTML = `<div class="verse-item">${bookName} ${chapter}:${fromVerse}</div>`;
+        } else {
+            versesList.innerHTML = `<div class="verse-item">${bookName} ${chapter}:${fromVerse}-${toVerse}</div>`;
         }
     }
 
-    setupVerseSelectionListener() {
-        const checkSelection = setInterval(() => {
-            const bookModal = document.getElementById('book-selection-modal');
-            const chapterModal = document.getElementById('chapter-selection-modal');
+    confirmVerseSelection() {
+        const fromVerse = parseInt(document.getElementById('verse-from').value);
+        const toVerse = parseInt(document.getElementById('verse-to').value);
+        
+        if (fromVerse > toVerse) {
+            alert('Le verset de début ne peut pas être supérieur au verset de fin');
+            return;
+        }
+
+        if (bibleAppInstance && bibleAppInstance.currentBook && bibleAppInstance.currentChapter) {
+            const book = bibleAppInstance.currentBook;
+            const chapter = bibleAppInstance.currentChapter;
+            const bookName = bookNames.french[book] || book;
             
-            if ((!bookModal || bookModal.style.display === 'none') && 
-                (!chapterModal || chapterModal.style.display === 'none')) {
-                clearInterval(checkSelection);
-                
-                // Rouvrir la modale homélie
-                document.getElementById('homily-section').style.display = 'block';
-                
-                // Récupérer la sélection actuelle
-                if (bibleAppInstance && bibleAppInstance.currentBook && bibleAppInstance.currentChapter) {
-                    const book = bibleAppInstance.currentBook;
-                    const chapter = bibleAppInstance.currentChapter;
-                    const bookName = bookNames.french[book] || book;
-                    const verseRef = `${bookName} ${chapter}`;
-                    
-                    const targetElement = document.getElementById(this.currentVerseTarget);
-                    if (targetElement) {
-                        targetElement.value = verseRef;
-                    }
-                    
-                    if (this.currentVerseTarget === 'pericopeRef') {
-                        this.state.pericopeRef = verseRef;
-                    }
+            let verseRef;
+            if (fromVerse === toVerse) {
+                verseRef = `${bookName} ${chapter}:${fromVerse}`;
+            } else {
+                verseRef = `${bookName} ${chapter}:${fromVerse}-${toVerse}`;
+            }
+            
+            const targetElement = document.getElementById(this.currentVerseTarget);
+            if (targetElement) {
+                targetElement.value = verseRef;
+            }
+            
+            if (this.currentVerseTarget === 'pericopeRef') {
+                this.state.pericopeRef = verseRef;
+            } else if (this.currentVerseTarget && this.currentVerseTarget.startsWith('truth-')) {
+                const parts = this.currentVerseTarget.split('-');
+                const truthIndex = parseInt(parts[1]);
+                if (this.state.truths[truthIndex]) {
+                    this.state.truths[truthIndex].versesRef = verseRef;
+                    this.rerenderTruths();
                 }
             }
-        }, 100);
+        }
+        
+        document.getElementById('verse-selection-modal').style.display = 'none';
     }
 
     renderTruthCard(truth, idx) {
@@ -385,42 +606,59 @@ class HomilyGeneratorUI {
             </div>
 
             <label>${t.lblKey}
-                <textarea class="inp keyStatement" placeholder="${t.phKey}">${truth.keyStatement || ''}</textarea>
+                <textarea class="inp wide-input keyStatement" placeholder="${t.phKey}">${truth.keyStatement || ''}</textarea>
             </label>
 
             <label>${t.lblVerses}
-                <input class="inp versesRef" placeholder="${t.phVerses}" value="${truth.versesRef || ''}" />
-                <button type="button" class="btn-small btn-secondary select-verses" data-index="${idx}">Sélectionner</button>
+                <input class="inp wide-input versesRef" placeholder="${t.phVerses}" value="${truth.versesRef || ''}" />
+                <button type="button" class="btn-small btn-secondary select-verses" data-index="${idx}">${t.selectVerses}</button>
             </label>
 
             <label>${t.lblExplain}
-                <textarea class="inp explanation" placeholder="${t.explainLead} ...">${truth.explanation || ''}</textarea>
+                <textarea class="inp wide-input explanation" placeholder="${t.explainLead} ...">${truth.explanation || ''}</textarea>
             </label>
 
             <fieldset class="app-fieldset">
                 <legend>${t.lblApp(t.appDimsLabel)}</legend>
-                <input class="inp appD1" placeholder="${t.phD1}" value="${truth.appD1 || ''}" />
-                <input class="inp appD2" placeholder="${t.phD2}" value="${truth.appD2 || ''}" />
-                <input class="inp appD3" placeholder="${t.phD3}" value="${truth.appD3 || ''}" />
+                <div class="dimension-row">
+                    <input class="inp wide-input appD1" placeholder="${t.phD1}" value="${truth.appD1 || ''}" />
+                    <button type="button" class="btn-small btn-danger remove-dimension" data-dim="1" data-index="${idx}">${t.removeDim}</button>
+                </div>
+                <div class="dimension-row">
+                    <input class="inp wide-input appD2" placeholder="${t.phD2}" value="${truth.appD2 || ''}" />
+                    <button type="button" class="btn-small btn-danger remove-dimension" data-dim="2" data-index="${idx}">${t.removeDim}</button>
+                </div>
+                <div class="dimension-row">
+                    <input class="inp wide-input appD3" placeholder="${t.phD3}" value="${truth.appD3 || ''}" />
+                    <button type="button" class="btn-small btn-danger remove-dimension" data-dim="3" data-index="${idx}">${t.removeDim}</button>
+                </div>
             </fieldset>
 
             <label>${t.lblReflect}
-                <input class="inp reflection" placeholder="${t.reflectLead} …" value="${truth.reflection || ''}" />
+                <textarea class="inp wide-input reflection" placeholder="${t.reflectLead} …">${truth.reflection || ''}</textarea>
             </label>
 
             <label>${t.lblExhort}
-                <input class="inp exhortation" placeholder="${t.exhortLead} …" value="${truth.exhortation || ''}" />
+                <textarea class="inp wide-input exhortation" placeholder="${t.exhortLead} …">${truth.exhortation || ''}</textarea>
             </label>
 
             <label>${t.lblChrist}
-                <textarea class="inp christology" placeholder="${t.christLead} …">${truth.christology || ''}</textarea>
+                <textarea class="inp wide-input christology" placeholder="${t.christLead} …">${truth.christology || ''}</textarea>
             </label>
+
+            <!-- Notes intercalaires pour chaque vérité -->
+            <details class="note intercalary-notes">
+                <summary>Notes intercalaires (facultatif)</summary>
+                <textarea class="inp wide-input intercalaryNotes" placeholder="Notes supplémentaires pour cette vérité...">${truth.intercalaryNotes || ''}</textarea>
+            </details>
         `;
 
         // Événements de saisie
         wrap.addEventListener('input', (e) => {
             const el = e.target;
-            const field = el.className.split(' ')[1];
+            const field = el.className.split(' ').find(cls => 
+                ['keyStatement', 'versesRef', 'explanation', 'appD1', 'appD2', 'appD3', 'reflection', 'exhortation', 'christology', 'intercalaryNotes'].includes(cls)
+            );
             if (this.state.truths[idx] && field) {
                 this.state.truths[idx][field] = el.value;
             }
@@ -434,6 +672,15 @@ class HomilyGeneratorUI {
                 this.openVerseSelectionForTruth(index);
             });
         }
+
+        // Boutons de suppression des dimensions
+        wrap.querySelectorAll('.remove-dimension').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const index = e.target.dataset.index;
+                const dim = e.target.dataset.dim;
+                this.removeDimension(index, dim);
+            });
+        });
 
         // Actions de la carte
         wrap.addEventListener('click', (e) => {
@@ -456,10 +703,17 @@ class HomilyGeneratorUI {
         return wrap;
     }
 
+    removeDimension(truthIndex, dimension) {
+        const fieldName = `appD${dimension}`;
+        if (this.state.truths[truthIndex]) {
+            this.state.truths[truthIndex][fieldName] = "";
+            this.rerenderTruths();
+        }
+    }
+
     openVerseSelectionForTruth(truthIndex) {
-        this.currentTruthIndex = truthIndex;
         this.currentVerseTarget = `truth-${truthIndex}-verses`;
-        this.openVerseSelection(null);
+        this.openVerseSelection(this.currentVerseTarget);
     }
 
     rerenderTruths() {
@@ -551,6 +805,13 @@ class HomilyGeneratorUI {
             lines.push(this.renderTruthMarkdown(truth, idx));
         });
         
+        // Notes de conclusion intercalaires
+        if (this.state.conclusionNotes?.trim()) {
+            lines.push(`## Notes Intercalaires`);
+            lines.push(this.state.conclusionNotes.trim());
+            lines.push('');
+        }
+        
         // Conclusion
         lines.push(`## ${t.conclTitle}`);
         lines.push(`${t.conclLead}`);
@@ -559,11 +820,6 @@ class HomilyGeneratorUI {
             const short = truth.keyStatement?.trim() || truth.title;
             lines.push(`- **${num})** ${short}`);
         });
-        
-        if (this.state.conclusionNotes?.trim()) {
-            lines.push('');
-            lines.push(this.state.conclusionNotes.trim());
-        }
         
         lines.push('');
         lines.push(t.gloria);
@@ -609,6 +865,11 @@ class HomilyGeneratorUI {
         
         if (truth.christology?.trim()) {
             md += `**${t.lblChristOut}** ${truth.christology.trim()}\n\n`;
+        }
+        
+        // Notes intercalaires pour cette vérité
+        if (truth.intercalaryNotes?.trim()) {
+            md += `**Notes:** ${truth.intercalaryNotes.trim()}\n\n`;
         }
         
         return md;
