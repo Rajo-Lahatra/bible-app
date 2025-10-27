@@ -207,7 +207,7 @@ class HomilyGeneratorUI {
         
         this.currentVerseTarget = null;
         this.currentTruthIndex = null;
-        this.currentTextarea = null; // Nouveau: pour l'insertion dans les textareas
+        this.currentTextarea = null;
         this.currentFieldName = null;
         this.selectedVerses = {};
         this.currentBook = "Genesisy";
@@ -487,30 +487,12 @@ class HomilyGeneratorUI {
                     border: 1px solid #c8e6c9;
                 }
 
-                .theme-section {
-                    margin-bottom: 2rem;
-                    padding: 1rem;
-                    background: #f8f9fa;
-                    border-radius: 8px;
-                    border: 1px solid #e9ecef;
-                }
-
-                .theme-section label {
-                    font-weight: bold;
-                    font-size: 1.1rem;
-                }
-
                 .pericope-section {
                     margin-bottom: 2rem;
                     padding: 1rem;
                     background: #f8f9fa;
                     border-radius: 8px;
                     border: 1px solid #e9ecef;
-                }
-
-                .pericope-section h3 {
-                    margin-top: 0;
-                    color: #2c5aa0;
                 }
 
                 .verses-list-container {
@@ -586,15 +568,18 @@ class HomilyGeneratorUI {
                     gap: 0.5rem;
                 }
 
+                /* CHAMPS DE DIMENSIONS AVEC LA MÊME LARGEUR */
                 .dimension-row {
                     display: flex;
                     align-items: center;
                     gap: 0.5rem;
                     margin-bottom: 0.5rem;
+                    width: 100%;
                 }
 
                 .dimension-row .inp {
                     flex: 1;
+                    width: 100% !important;
                 }
 
                 .remove-dimension {
@@ -604,6 +589,7 @@ class HomilyGeneratorUI {
                     display: flex;
                     align-items: center;
                     justify-content: center;
+                    flex-shrink: 0;
                 }
 
                 .insert-verse-btn {
@@ -616,6 +602,7 @@ class HomilyGeneratorUI {
                     margin-left: 0.5rem;
                     cursor: pointer;
                     transition: background 0.3s;
+                    flex-shrink: 0;
                 }
 
                 .insert-verse-btn:hover {
