@@ -199,3 +199,94 @@ export async function getUserData(supabase) {
         comments: commentsRes.data || []
     };
 }
+
+// Fonctions pour la sauvegarde des sermons/homélies
+export async function saveSermon(supabase, sermonData) {
+    const user = await getCurrentUser();
+    if (!user) throw new Error('Utilisateur non connecté');
+
+    const { id, type, title, content, language } = sermonData;
+    
+    const sermonRecord = {
+        user_id: user.id,
+        type: type,
+        title: title,
+        content: content,
+        language: language,
+        updated_at: new Date().toISOString()
+    };
+
+    if (id) {
+        // Mise à jour d'un sermon existant
+        const { data, error } = await supabase
+            .from('sermons')
+            .update(sermonRecord)
+            .eq('id', id)
+            .eq('user_id', user.id)
+            .select()
+            .single();
+        
+        if (error) throw error;
+        return data;
+    } else {
+        // Création d'un nouveau sermon
+        sermonRecord.created_at = new Date().toISOString();
+        
+        const { data, error } = await supabase
+            .from('sermons')
+            .insert(sermonRecord)
+            .select()
+            .single();
+        
+        if (error) throw error;
+        return data;
+    }
+}
+
+export async function getUserSermons(supabase, type = null) {
+    const user = await getCurrentUser();
+    if (!user) return [];
+
+    let query = supabase
+        .from('sermons')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('updated_at', { ascending: false });
+
+    if (type) {
+        query = query.eq('type', type);
+    }
+
+    const { data, error } = await query;
+
+    if (error) throw error;
+    return data || [];
+}
+
+export async function deleteSermon(supabase, sermonId) {
+    const user = await getCurrentUser();
+    if (!user) throw new Error('Utilisateur non connecté');
+
+    const { error } = await supabase
+        .from('sermons')
+        .delete()
+        .eq('id', sermonId)
+        .eq('user_id', user.id);
+    
+    if (error) throw error;
+}
+
+export async function getSermon(supabase, sermonId) {
+    const user = await getCurrentUser();
+    if (!user) throw new Error('Utilisateur non connecté');
+
+    const { data, error } = await supabase
+        .from('sermons')
+        .select('*')
+        .eq('id', sermonId)
+        .eq('user_id', user.id)
+        .single();
+    
+    if (error) throw error;
+    return data;
+}

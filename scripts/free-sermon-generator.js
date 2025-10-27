@@ -1,4 +1,5 @@
 import { bookNames, getVerses, books, getChapters } from './bible-data.js';
+import { saveSermon, getUserSermons, deleteSermon } from './supabase-client.js';
 
 let bibleAppInstance = null;
 
@@ -33,7 +34,16 @@ const TDICT = {
         selectBook: "Livre",
         selectChapter: "Chapitre",
         versesText: "Texte des versets",
-        selectedVersesDisplay: "Versets sélectionnés pour la prédication"
+        selectedVersesDisplay: "Versets sélectionnés pour la prédication",
+
+        insertVerse: "Insérer un verset",
+        saveSermon: "Sauvegarder la prédication",
+        loadSermon: "Charger une prédication",
+        savedSermons: "Prédications sauvegardées",
+        sermonTitle: "Titre de la prédication",
+        noSavedSermons: "Aucune prédication sauvegardée",
+        deleteSermon: "Supprimer",
+        load: "Charger"
     },
 
     fr: {
@@ -65,7 +75,16 @@ const TDICT = {
         selectBook: "Livre",
         selectChapter: "Chapitre",
         versesText: "Texte des versets",
-        selectedVersesDisplay: "Versets sélectionnés pour la prédication"
+        selectedVersesDisplay: "Versets sélectionnés pour la prédication",
+
+        insertVerse: "Insérer un verset",
+        saveSermon: "Sauvegarder la prédication",
+        loadSermon: "Charger une prédication",
+        savedSermons: "Prédications sauvegardées",
+        sermonTitle: "Titre de la prédication",
+        noSavedSermons: "Aucune prédication sauvegardée",
+        deleteSermon: "Supprimer",
+        load: "Charger"
     }
 };
 
@@ -98,15 +117,20 @@ class FreeSermonGeneratorUI {
                     content: ""
                 }
             ],
+            sermonTitle: "",
+            id: null
         };
         
         this.currentVerseTarget = null;
+        this.currentTextarea = null;
+        this.currentPartIndex = null;
         this.currentBook = "Genesisy";
         this.currentChapter = "1";
         this.currentFromVerse = 1;
         this.currentToVerse = 1;
         this.maxVerses = 1;
         this.currentVersesData = {};
+        this.savedSermons = [];
         
         this.initUI();
     }
@@ -127,6 +151,7 @@ class FreeSermonGeneratorUI {
             sermonContainer.innerHTML = this.getTemplate();
             this.bindEvents();
             this.initializeVerseSelectionModal();
+            this.initializeLoadSermonModal();
         } catch (error) {
             console.error('Erreur lors de l\'initialisation de l\'UI sermon libre:', error);
         }
@@ -146,10 +171,20 @@ class FreeSermonGeneratorUI {
                     </select>
                 </div>
 
-                <!-- BOUTONS D'ACTION EN HAUT -->
+                <!-- BOUTONS D'ACTION EN HAUT AVEC SAUVEGARDE -->
                 <div class="actions-top">
                     <button type="button" id="addPart" class="btn-secondary">${t.uiAddPart}</button>
                     <button type="button" id="generate" class="btn-primary">${t.uiGenerate}</button>
+                    <button type="button" id="saveSermon" class="btn-success">${t.saveSermon}</button>
+                    <button type="button" id="loadSermon" class="btn-secondary">${t.loadSermon}</button>
+                </div>
+
+                <!-- Titre pour la sauvegarde -->
+                <div class="sermon-title-section">
+                    <label>
+                        ${t.sermonTitle}
+                        <input id="sermonTitle" class="inp wide-input" placeholder="${t.sermonTitle}" value="${this.state.sermonTitle}" />
+                    </label>
                 </div>
 
                 <div class="theme-section">
@@ -203,7 +238,7 @@ class FreeSermonGeneratorUI {
                 <div id="verse-selection-modal" class="modal verse-selection-modal">
                     <div class="modal-content">
                         <span class="close">&times;</span>
-                        <h3>${t.verseSelectionTitle}</h3>
+                        <h3>${t.verseSelectionTitle} <span id="verse-mode-indicator" style="font-size: 0.8em; color: #666;"></span></h3>
                         
                         <div class="verse-selection-controls">
                             <div class="book-chapter-selection">
@@ -244,7 +279,19 @@ class FreeSermonGeneratorUI {
                         
                         <div class="modal-actions">
                             <button type="button" id="confirm-verse-selection" class="btn-primary">${t.selectVerses}</button>
+                            <button type="button" id="insert-verse-text" class="btn-success" style="display: none;">${t.insertVerse}</button>
                             <button type="button" id="cancel-verse-selection" class="btn-secondary">Annuler</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Modal pour charger les prédications sauvegardées -->
+                <div id="load-sermon-modal" class="modal">
+                    <div class="modal-content">
+                        <span class="close">&times;</span>
+                        <h3>${t.savedSermons}</h3>
+                        <div id="sermons-list" class="sermons-list">
+                            <!-- Les prédications sauvegardées seront chargées ici -->
                         </div>
                     </div>
                 </div>
@@ -307,6 +354,29 @@ class FreeSermonGeneratorUI {
 
                 .actions-top .btn-secondary:hover {
                     background: #545b62;
+                }
+
+                .btn-success {
+                    background: #28a745;
+                    color: white;
+                    border: none;
+                    padding: 0.75rem 1.5rem;
+                    border-radius: 6px;
+                    font-weight: bold;
+                    cursor: pointer;
+                    transition: background 0.3s;
+                }
+
+                .btn-success:hover {
+                    background: #218838;
+                }
+
+                .sermon-title-section {
+                    margin-bottom: 1rem;
+                    padding: 1rem;
+                    background: #e8f5e8;
+                    border-radius: 8px;
+                    border: 1px solid #c8e6c9;
                 }
 
                 .theme-section {
@@ -413,6 +483,22 @@ class FreeSermonGeneratorUI {
 
                 .part-content {
                     margin-top: 1rem;
+                }
+
+                .insert-verse-btn {
+                    background: #17a2b8;
+                    color: white;
+                    border: none;
+                    padding: 0.25rem 0.5rem;
+                    border-radius: 4px;
+                    font-size: 0.8rem;
+                    margin-left: 0.5rem;
+                    cursor: pointer;
+                    transition: background 0.3s;
+                }
+
+                .insert-verse-btn:hover {
+                    background: #138496;
                 }
 
                 .verse-selection-modal .modal-content {
@@ -527,6 +613,41 @@ class FreeSermonGeneratorUI {
                     border: 1px solid #ddd;
                     border-radius: 4px;
                 }
+
+                .sermons-list {
+                    max-height: 400px;
+                    overflow-y: auto;
+                }
+
+                .sermon-item {
+                    padding: 1rem;
+                    margin-bottom: 0.5rem;
+                    background: #f8f9fa;
+                    border-radius: 6px;
+                    border: 1px solid #dee2e6;
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                }
+
+                .sermon-info {
+                    flex: 1;
+                }
+
+                .sermon-title {
+                    font-weight: bold;
+                    color: #2c5aa0;
+                }
+
+                .sermon-date {
+                    font-size: 0.8rem;
+                    color: #6c757d;
+                }
+
+                .sermon-actions {
+                    display: flex;
+                    gap: 0.5rem;
+                }
             </style>
         `;
     }
@@ -556,6 +677,7 @@ class FreeSermonGeneratorUI {
                 <div class="part-content">
                     <label>${t.partContent}
                         <textarea class="inp wide-input part-content" placeholder="${t.partContent}">${part.content || ''}</textarea>
+                        <button type="button" class="insert-verse-btn" data-index="${index}">${t.insertVerse}</button>
                     </label>
                 </div>
             </div>
@@ -583,6 +705,14 @@ class FreeSermonGeneratorUI {
             });
         }
 
+        // Titre de la prédication
+        const sermonTitle = document.getElementById('sermonTitle');
+        if (sermonTitle) {
+            sermonTitle.addEventListener('input', (e) => {
+                this.state.sermonTitle = e.target.value;
+            });
+        }
+
         // Ajout de verset à la péricope
         const addPericopeVerseBtn = document.getElementById('add-pericope-verse');
         if (addPericopeVerseBtn) {
@@ -605,6 +735,29 @@ class FreeSermonGeneratorUI {
         if (generateBtn) {
             generateBtn.addEventListener('click', () => {
                 this.generateOutput();
+            });
+        }
+
+        // Boutons de sauvegarde et chargement
+        const saveBtn = document.getElementById('saveSermon');
+        if (saveBtn) {
+            saveBtn.addEventListener('click', () => {
+                this.saveSermon();
+            });
+        }
+
+        const loadBtn = document.getElementById('loadSermon');
+        if (loadBtn) {
+            loadBtn.addEventListener('click', () => {
+                this.openLoadSermonModal();
+            });
+        }
+
+        // NOUVEAU: Bouton d'insertion de verset dans la modal
+        const insertVerseBtn = document.getElementById('insert-verse-text');
+        if (insertVerseBtn) {
+            insertVerseBtn.addEventListener('click', () => {
+                this.insertVerseText();
             });
         }
 
@@ -648,6 +801,94 @@ class FreeSermonGeneratorUI {
                 }
             });
         }
+
+        // NOUVEAU: Événements pour les boutons d'insertion de versets dans les parties
+        partsList.addEventListener('click', (e) => {
+            if (e.target.classList.contains('insert-verse-btn')) {
+                const index = parseInt(e.target.dataset.index);
+                const partCard = e.target.closest('.part-card');
+                const textarea = partCard.querySelector('.part-content');
+                if (textarea) {
+                    this.openVerseInsertion(textarea, index);
+                }
+            }
+        });
+    }
+
+    initializeVerseSelectionModal() {
+        const modal = document.getElementById('verse-selection-modal');
+        const closeBtn = modal.querySelector('.close');
+        const cancelBtn = document.getElementById('cancel-verse-selection');
+        const confirmBtn = document.getElementById('confirm-verse-selection');
+        const insertBtn = document.getElementById('insert-verse-text');
+        const bookSelect = document.getElementById('verse-book-select');
+        const chapterSelect = document.getElementById('verse-chapter-select');
+
+        // Fermeture de la modale
+        closeBtn.addEventListener('click', () => {
+            modal.style.display = 'none';
+        });
+
+        cancelBtn.addEventListener('click', () => {
+            modal.style.display = 'none';
+        });
+
+        confirmBtn.addEventListener('click', () => {
+            this.confirmVerseSelection();
+        });
+
+        insertBtn.addEventListener('click', () => {
+            this.insertVerseText();
+        });
+
+        // Changement de livre
+        bookSelect.addEventListener('change', (e) => {
+            this.currentBook = e.target.value;
+            this.loadChaptersForBook(this.currentBook);
+        });
+
+        // Changement de chapitre
+        chapterSelect.addEventListener('change', (e) => {
+            this.currentChapter = e.target.value;
+            this.loadVersesForChapter(this.currentBook, parseInt(this.currentChapter));
+        });
+
+        // Changement des versets
+        document.getElementById('verse-from').addEventListener('input', (e) => {
+            this.currentFromVerse = parseInt(e.target.value) || 1;
+            this.updateSelectedVersesDisplay();
+            this.displayVersesText();
+        });
+
+        document.getElementById('verse-to').addEventListener('input', (e) => {
+            this.currentToVerse = parseInt(e.target.value) || 1;
+            this.updateSelectedVersesDisplay();
+            this.displayVersesText();
+        });
+
+        window.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                modal.style.display = 'none';
+            }
+        });
+
+        // Initialiser avec Genèse
+        this.loadChaptersForBook('Genesisy');
+    }
+
+    initializeLoadSermonModal() {
+        const modal = document.getElementById('load-sermon-modal');
+        const closeBtn = modal.querySelector('.close');
+        
+        closeBtn.addEventListener('click', () => {
+            modal.style.display = 'none';
+        });
+
+        window.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                modal.style.display = 'none';
+            }
+        });
     }
 
     addPart() {
@@ -706,62 +947,6 @@ class FreeSermonGeneratorUI {
         if (noVersesMsg) {
             noVersesMsg.style.display = this.state.pericopeRefs.length === 0 ? 'block' : 'none';
         }
-    }
-
-    initializeVerseSelectionModal() {
-        const modal = document.getElementById('verse-selection-modal');
-        const closeBtn = modal.querySelector('.close');
-        const cancelBtn = document.getElementById('cancel-verse-selection');
-        const confirmBtn = document.getElementById('confirm-verse-selection');
-        const bookSelect = document.getElementById('verse-book-select');
-        const chapterSelect = document.getElementById('verse-chapter-select');
-
-        // Fermeture de la modale
-        closeBtn.addEventListener('click', () => {
-            modal.style.display = 'none';
-        });
-
-        cancelBtn.addEventListener('click', () => {
-            modal.style.display = 'none';
-        });
-
-        confirmBtn.addEventListener('click', () => {
-            this.confirmVerseSelection();
-        });
-
-        // Changement de livre
-        bookSelect.addEventListener('change', (e) => {
-            this.currentBook = e.target.value;
-            this.loadChaptersForBook(this.currentBook);
-        });
-
-        // Changement de chapitre
-        chapterSelect.addEventListener('change', (e) => {
-            this.currentChapter = e.target.value;
-            this.loadVersesForChapter(this.currentBook, parseInt(this.currentChapter));
-        });
-
-        // Changement des versets
-        document.getElementById('verse-from').addEventListener('input', (e) => {
-            this.currentFromVerse = parseInt(e.target.value) || 1;
-            this.updateSelectedVersesDisplay();
-            this.displayVersesText();
-        });
-
-        document.getElementById('verse-to').addEventListener('input', (e) => {
-            this.currentToVerse = parseInt(e.target.value) || 1;
-            this.updateSelectedVersesDisplay();
-            this.displayVersesText();
-        });
-
-        window.addEventListener('click', (e) => {
-            if (e.target === modal) {
-                modal.style.display = 'none';
-            }
-        });
-
-        // Initialiser avec Genèse
-        this.loadChaptersForBook('Genesisy');
     }
 
     async loadChaptersForBook(book) {
@@ -873,7 +1058,35 @@ class FreeSermonGeneratorUI {
     }
 
     openVerseSelection() {
-        document.getElementById('verse-selection-modal').style.display = 'block';
+        const modal = document.getElementById('verse-selection-modal');
+        const modeIndicator = document.getElementById('verse-mode-indicator');
+        const insertBtn = document.getElementById('insert-verse-text');
+        const confirmBtn = document.getElementById('confirm-verse-selection');
+        
+        // Mode normal (sélection)
+        if (modeIndicator) modeIndicator.textContent = "";
+        if (insertBtn) insertBtn.style.display = 'none';
+        if (confirmBtn) confirmBtn.style.display = 'inline-block';
+        
+        modal.style.display = 'block';
+    }
+
+    // NOUVELLE MÉTHODE: Ouvrir la sélection de versets pour insertion
+    openVerseInsertion(textarea, partIndex = null) {
+        this.currentTextarea = textarea;
+        this.currentPartIndex = partIndex;
+        this.currentVerseTarget = 'insert';
+        
+        const modal = document.getElementById('verse-selection-modal');
+        const modeIndicator = document.getElementById('verse-mode-indicator');
+        const insertBtn = document.getElementById('insert-verse-text');
+        const confirmBtn = document.getElementById('confirm-verse-selection');
+        
+        if (modeIndicator) modeIndicator.textContent = "(Mode insertion)";
+        if (insertBtn) insertBtn.style.display = 'inline-block';
+        if (confirmBtn) confirmBtn.style.display = 'none';
+        
+        modal.style.display = 'block';
     }
 
     confirmVerseSelection() {
@@ -903,6 +1116,54 @@ class FreeSermonGeneratorUI {
         document.getElementById('verse-selection-modal').style.display = 'none';
     }
 
+    // NOUVELLE MÉTHODE: Insérer le texte du verset
+    insertVerseText() {
+        if (!this.currentTextarea) return;
+
+        // Utiliser les noms de livres dans la langue sélectionnée
+        const bookName = this.state.lang === 'mg' ? 
+            bookNames.malagasy[this.currentBook] : 
+            bookNames.french[this.currentBook];
+        
+        let verseRef;
+        if (this.currentFromVerse === this.currentToVerse) {
+            verseRef = `${bookName} ${this.currentChapter}:${this.currentFromVerse}`;
+        } else {
+            verseRef = `${bookName} ${this.currentChapter}:${this.currentFromVerse}-${this.currentToVerse}`;
+        }
+
+        // Récupérer le texte des versets
+        let versesText = '';
+        for (let verseNum = this.currentFromVerse; verseNum <= this.currentToVerse; verseNum++) {
+            if (this.currentVersesData[verseNum]) {
+                versesText += `${verseNum} ${this.currentVersesData[verseNum]}\n`;
+            }
+        }
+
+        // Formater le texte à insérer
+        const textToInsert = `\n[${verseRef}]\n${versesText}\n`;
+
+        // Insérer à la position du curseur
+        const startPos = this.currentTextarea.selectionStart;
+        const endPos = this.currentTextarea.selectionEnd;
+        const textBefore = this.currentTextarea.value.substring(0, startPos);
+        const textAfter = this.currentTextarea.value.substring(endPos, this.currentTextarea.value.length);
+
+        this.currentTextarea.value = textBefore + textToInsert + textAfter;
+        
+        // Mettre à jour le state si c'est un champ d'une partie
+        if (this.currentPartIndex !== null) {
+            this.state.parts[this.currentPartIndex].content = this.currentTextarea.value;
+        }
+
+        // Fermer la modal
+        document.getElementById('verse-selection-modal').style.display = 'none';
+        
+        // Réinitialiser
+        this.currentTextarea = null;
+        this.currentPartIndex = null;
+    }
+
     updateUITexts() {
         const t = this.T();
         
@@ -913,10 +1174,17 @@ class FreeSermonGeneratorUI {
         // Boutons
         const addBtn = document.getElementById('addPart');
         const genBtn = document.getElementById('generate');
+        const saveBtn = document.getElementById('saveSermon');
+        const loadBtn = document.getElementById('loadSermon');
         if (addBtn) addBtn.textContent = t.uiAddPart;
         if (genBtn) genBtn.textContent = t.uiGenerate;
+        if (saveBtn) saveBtn.textContent = t.saveSermon;
+        if (loadBtn) loadBtn.textContent = t.loadSermon;
         
         // Labels
+        const sermonTitleLabel = document.querySelector('.sermon-title-section label');
+        if (sermonTitleLabel) sermonTitleLabel.innerHTML = t.sermonTitle;
+        
         const themeLabel = document.querySelector('.theme-section label');
         if (themeLabel) themeLabel.innerHTML = t.uiTheme;
         
@@ -1066,5 +1334,133 @@ class FreeSermonGeneratorUI {
         a.download = filename;
         a.click();
         URL.revokeObjectURL(url);
+    }
+
+    // MÉTHODES DE SAUVEGARDE
+    async saveSermon() {
+        if (!bibleAppInstance.currentUser) {
+            bibleAppInstance.showMessage('Veuillez vous connecter pour sauvegarder', 'error');
+            bibleAppInstance.openAuthModal('login');
+            return;
+        }
+
+        if (!this.state.sermonTitle.trim()) {
+            bibleAppInstance.showMessage('Veuillez donner un titre à votre prédication', 'error');
+            return;
+        }
+
+        try {
+            const sermonData = {
+                type: 'free_sermon',
+                title: this.state.sermonTitle,
+                content: this.state,
+                language: this.state.lang
+            };
+
+            if (this.state.id) {
+                sermonData.id = this.state.id;
+            }
+
+            const savedSermon = await saveSermon(bibleAppInstance.supabase, sermonData);
+            this.state.id = savedSermon.id;
+            
+            bibleAppInstance.showMessage('Prédication sauvegardée avec succès', 'success');
+        } catch (error) {
+            console.error('Erreur lors de la sauvegarde:', error);
+            bibleAppInstance.showMessage('Erreur lors de la sauvegarde', 'error');
+        }
+    }
+
+    async openLoadSermonModal() {
+        if (!bibleAppInstance.currentUser) {
+            bibleAppInstance.showMessage('Veuillez vous connecter pour charger vos prédications', 'error');
+            bibleAppInstance.openAuthModal('login');
+            return;
+        }
+
+        try {
+            this.savedSermons = await getUserSermons(bibleAppInstance.supabase, 'free_sermon');
+            this.renderSermonsList();
+            document.getElementById('load-sermon-modal').style.display = 'block';
+        } catch (error) {
+            console.error('Erreur lors du chargement des prédications:', error);
+            bibleAppInstance.showMessage('Erreur lors du chargement des prédications', 'error');
+        }
+    }
+
+    renderSermonsList() {
+        const t = this.T();
+        const listContainer = document.getElementById('sermons-list');
+        
+        if (this.savedSermons.length === 0) {
+            listContainer.innerHTML = `<p class="no-sermons">${t.noSavedSermons}</p>`;
+            return;
+        }
+
+        listContainer.innerHTML = this.savedSermons.map(sermon => `
+            <div class="sermon-item">
+                <div class="sermon-info">
+                    <div class="sermon-title">${sermon.title}</div>
+                    <div class="sermon-date">${new Date(sermon.created_at).toLocaleDateString()} - ${sermon.language.toUpperCase()}</div>
+                </div>
+                <div class="sermon-actions">
+                    <button type="button" class="btn-small btn-primary load-sermon" data-id="${sermon.id}">${t.load}</button>
+                    <button type="button" class="btn-small btn-danger delete-sermon" data-id="${sermon.id}">${t.deleteSermon}</button>
+                </div>
+            </div>
+        `).join('');
+
+        listContainer.querySelectorAll('.load-sermon').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const sermonId = e.target.dataset.id;
+                this.loadSermon(sermonId);
+            });
+        });
+
+        listContainer.querySelectorAll('.delete-sermon').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const sermonId = e.target.dataset.id;
+                this.deleteSermon(sermonId);
+            });
+        });
+    }
+
+    async loadSermon(sermonId) {
+        try {
+            const sermon = this.savedSermons.find(s => s.id === sermonId);
+            if (sermon) {
+                this.state = { ...sermon.content, id: sermon.id };
+                this.state.sermonTitle = sermon.title;
+                
+                document.getElementById('sermonTitle').value = this.state.sermonTitle;
+                document.getElementById('themeInput').value = this.state.theme;
+                document.getElementById('langSelect').value = this.state.lang;
+                
+                this.updatePericopeDisplay();
+                this.rerenderParts();
+                
+                document.getElementById('load-sermon-modal').style.display = 'none';
+                bibleAppInstance.showMessage('Prédication chargée avec succès', 'success');
+            }
+        } catch (error) {
+            console.error('Erreur lors du chargement:', error);
+            bibleAppInstance.showMessage('Erreur lors du chargement de la prédication', 'error');
+        }
+    }
+
+    async deleteSermon(sermonId) {
+        if (!confirm('Voulez-vous vraiment supprimer cette prédication ?')) {
+            return;
+        }
+
+        try {
+            await deleteSermon(bibleAppInstance.supabase, sermonId);
+            this.savedSermons = this.savedSermons.filter(s => s.id !== sermonId);
+            this.renderSermonsList();
+            bibleAppInstance.showMessage('Prédication supprimée avec succès', 'success');
+        } catch (error) {
+            console.error('Erreur lors de la suppression:', error);
+            bibleAppInstance.showMessage('Erreur lors de la suppression', 'error');
+        }
     }
 }

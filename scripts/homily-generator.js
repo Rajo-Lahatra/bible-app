@@ -1,4 +1,5 @@
 import { bookNames, getVerses, books, getChapters } from './bible-data.js';
+import { saveSermon, getUserSermons, deleteSermon } from './supabase-client.js';
 
 let bibleAppInstance = null;
 
@@ -76,7 +77,16 @@ const TDICT = {
         selectedVerses: "Versets sélectionnés",
         selectBook: "Livre",
         selectChapter: "Chapitre",
-        versesText: "Texte des versets"
+        versesText: "Texte des versets",
+
+        insertVerse: "Insérer un verset",
+        saveSermon: "Sauvegarder l'homélie",
+        loadSermon: "Charger une homélie",
+        savedSermons: "Homélies sauvegardées",
+        sermonTitle: "Titre de l'homélie",
+        noSavedSermons: "Aucune homélie sauvegardée",
+        deleteSermon: "Supprimer",
+        load: "Charger"
     },
 
     fr: {
@@ -151,7 +161,16 @@ const TDICT = {
         selectedVerses: "Versets sélectionnés",
         selectBook: "Livre",
         selectChapter: "Chapitre",
-        versesText: "Texte des versets"
+        versesText: "Texte des versets",
+
+        insertVerse: "Insérer un verset",
+        saveSermon: "Sauvegarder l'homélie",
+        loadSermon: "Charger une homélie",
+        savedSermons: "Homélies sauvegardées",
+        sermonTitle: "Titre de l'homélie",
+        noSavedSermons: "Aucune homélie sauvegardée",
+        deleteSermon: "Supprimer",
+        load: "Charger"
     }
 };
 
@@ -182,10 +201,14 @@ class HomilyGeneratorUI {
             pericopeText: "",
             truths: [],
             conclusionNotes: "",
+            sermonTitle: "",
+            id: null // Pour les homélies existantes
         };
         
         this.currentVerseTarget = null;
         this.currentTruthIndex = null;
+        this.currentTextarea = null; // Nouveau: pour l'insertion dans les textareas
+        this.currentFieldName = null;
         this.selectedVerses = {};
         this.currentBook = "Genesisy";
         this.currentChapter = "1";
@@ -193,6 +216,7 @@ class HomilyGeneratorUI {
         this.currentToVerse = 1;
         this.maxVerses = 1;
         this.currentVersesData = {};
+        this.savedSermons = [];
         
         // Maintenant initialiser les truths après que this.state soit défini
         this.state.truths = [this.emptyTruth(1), this.emptyTruth(2)];
@@ -235,6 +259,7 @@ class HomilyGeneratorUI {
             this.bindEvents();
             this.rerenderTruths();
             this.initializeVerseSelectionModal();
+            this.initializeLoadSermonModal();
         } catch (error) {
             console.error('Erreur lors de l\'initialisation de l\'UI homélie:', error);
         }
@@ -254,10 +279,20 @@ class HomilyGeneratorUI {
                     </select>
                 </div>
 
-                <!-- BOUTONS D'ACTION EN HAUT -->
+                <!-- BOUTONS D'ACTION EN HAUT AVEC SAUVEGARDE -->
                 <div class="actions-top">
                     <button type="button" id="addTruth" class="btn-secondary">${t.uiAddTruth}</button>
                     <button type="button" id="generate" class="btn-primary">${t.uiGenerate}</button>
+                    <button type="button" id="saveSermon" class="btn-success">${t.saveSermon}</button>
+                    <button type="button" id="loadSermon" class="btn-secondary">${t.loadSermon}</button>
+                </div>
+
+                <!-- Titre pour la sauvegarde -->
+                <div class="sermon-title-section">
+                    <label>
+                        ${t.sermonTitle}
+                        <input id="sermonTitle" class="inp wide-input" placeholder="${t.sermonTitle}" value="${this.state.sermonTitle}" />
+                    </label>
                 </div>
 
                 <div class="pericope-section">
@@ -289,6 +324,7 @@ class HomilyGeneratorUI {
                 <details class="note intercalary-notes">
                     <summary>${t.uiNotesSummary}</summary>
                     <textarea id="conclusionNotes" class="inp wide-input" placeholder="${t.uiNotesSummary}">${this.state.conclusionNotes}</textarea>
+                    <button type="button" class="insert-verse-btn" id="insert-conclusion-verse">${t.insertVerse}</button>
                 </details>
 
                 <!-- SECTION DE RÉSULTAT -->
@@ -310,7 +346,7 @@ class HomilyGeneratorUI {
                 <div id="verse-selection-modal" class="modal verse-selection-modal">
                     <div class="modal-content">
                         <span class="close">&times;</span>
-                        <h3>${t.verseSelectionTitle}</h3>
+                        <h3>${t.verseSelectionTitle} <span id="verse-mode-indicator" style="font-size: 0.8em; color: #666;"></span></h3>
                         
                         <div class="verse-selection-controls">
                             <div class="book-chapter-selection">
@@ -351,7 +387,19 @@ class HomilyGeneratorUI {
                         
                         <div class="modal-actions">
                             <button type="button" id="confirm-verse-selection" class="btn-primary">${t.selectVerses}</button>
+                            <button type="button" id="insert-verse-text" class="btn-success" style="display: none;">${t.insertVerse}</button>
                             <button type="button" id="cancel-verse-selection" class="btn-secondary">Annuler</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Modal pour charger les homélies sauvegardées -->
+                <div id="load-sermon-modal" class="modal">
+                    <div class="modal-content">
+                        <span class="close">&times;</span>
+                        <h3>${t.savedSermons}</h3>
+                        <div id="sermons-list" class="sermons-list">
+                            <!-- Les homélies sauvegardées seront chargées ici -->
                         </div>
                     </div>
                 </div>
@@ -416,12 +464,84 @@ class HomilyGeneratorUI {
                     background: #545b62;
                 }
 
+                .btn-success {
+                    background: #28a745;
+                    color: white;
+                    border: none;
+                    padding: 0.75rem 1.5rem;
+                    border-radius: 6px;
+                    font-weight: bold;
+                    cursor: pointer;
+                    transition: background 0.3s;
+                }
+
+                .btn-success:hover {
+                    background: #218838;
+                }
+
+                .sermon-title-section {
+                    margin-bottom: 1rem;
+                    padding: 1rem;
+                    background: #e8f5e8;
+                    border-radius: 8px;
+                    border: 1px solid #c8e6c9;
+                }
+
+                .theme-section {
+                    margin-bottom: 2rem;
+                    padding: 1rem;
+                    background: #f8f9fa;
+                    border-radius: 8px;
+                    border: 1px solid #e9ecef;
+                }
+
+                .theme-section label {
+                    font-weight: bold;
+                    font-size: 1.1rem;
+                }
+
                 .pericope-section {
                     margin-bottom: 2rem;
                     padding: 1rem;
                     background: #f8f9fa;
                     border-radius: 8px;
                     border: 1px solid #e9ecef;
+                }
+
+                .pericope-section h3 {
+                    margin-top: 0;
+                    color: #2c5aa0;
+                }
+
+                .verses-list-container {
+                    margin-top: 1rem;
+                }
+
+                .pericope-refs-list {
+                    margin-bottom: 1rem;
+                }
+
+                .verse-ref-item {
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    padding: 0.75rem;
+                    margin-bottom: 0.5rem;
+                    background: white;
+                    border-radius: 6px;
+                    border: 1px solid #dee2e6;
+                }
+
+                .verse-ref-text {
+                    font-weight: 500;
+                    color: #2c5aa0;
+                }
+
+                .no-verses {
+                    color: #6c757d;
+                    font-style: italic;
+                    text-align: center;
+                    padding: 1rem;
                 }
 
                 .verses-display-main {
@@ -444,6 +564,7 @@ class HomilyGeneratorUI {
                     padding: 1.5rem;
                     margin: 1rem 0;
                     background: #f9f9f9;
+                    position: relative;
                 }
 
                 .truth-card__head {
@@ -451,6 +572,13 @@ class HomilyGeneratorUI {
                     justify-content: space-between;
                     align-items: center;
                     margin-bottom: 1rem;
+                }
+
+                .truth-card__title {
+                    font-size: 1.2rem;
+                    font-weight: bold;
+                    color: #2c5aa0;
+                    margin: 0;
                 }
 
                 .truth-card__actions {
@@ -476,6 +604,22 @@ class HomilyGeneratorUI {
                     display: flex;
                     align-items: center;
                     justify-content: center;
+                }
+
+                .insert-verse-btn {
+                    background: #17a2b8;
+                    color: white;
+                    border: none;
+                    padding: 0.25rem 0.5rem;
+                    border-radius: 4px;
+                    font-size: 0.8rem;
+                    margin-left: 0.5rem;
+                    cursor: pointer;
+                    transition: background 0.3s;
+                }
+
+                .insert-verse-btn:hover {
+                    background: #138496;
                 }
 
                 .verse-selection-modal .modal-content {
@@ -628,6 +772,41 @@ class HomilyGeneratorUI {
                     color: #2c5aa0;
                     font-size: 0.9rem;
                 }
+
+                .sermons-list {
+                    max-height: 400px;
+                    overflow-y: auto;
+                }
+
+                .sermon-item {
+                    padding: 1rem;
+                    margin-bottom: 0.5rem;
+                    background: #f8f9fa;
+                    border-radius: 6px;
+                    border: 1px solid #dee2e6;
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                }
+
+                .sermon-info {
+                    flex: 1;
+                }
+
+                .sermon-title {
+                    font-weight: bold;
+                    color: #2c5aa0;
+                }
+
+                .sermon-date {
+                    font-size: 0.8rem;
+                    color: #6c757d;
+                }
+
+                .sermon-actions {
+                    display: flex;
+                    gap: 0.5rem;
+                }
             </style>
         `;
     }
@@ -644,7 +823,19 @@ class HomilyGeneratorUI {
         const selectPericopeBtn = document.getElementById('select-pericope');
         if (selectPericopeBtn) {
             selectPericopeBtn.addEventListener('click', () => {
-                this.openVerseSelection('pericopeRef');
+                this.currentVerseTarget = 'pericopeRef';
+                this.openVerseSelection();
+            });
+        }
+
+        // Insertion dans les notes de conclusion
+        const insertConclusionBtn = document.getElementById('insert-conclusion-verse');
+        if (insertConclusionBtn) {
+            insertConclusionBtn.addEventListener('click', () => {
+                const textarea = document.getElementById('conclusionNotes');
+                if (textarea) {
+                    this.openVerseInsertion(textarea, null, 'conclusionNotes');
+                }
             });
         }
 
@@ -683,6 +874,13 @@ class HomilyGeneratorUI {
             });
         }
 
+        const sermonTitle = document.getElementById('sermonTitle');
+        if (sermonTitle) {
+            sermonTitle.addEventListener('input', (e) => {
+                this.state.sermonTitle = e.target.value;
+            });
+        }
+
         // Boutons d'actions EN HAUT
         const addTruthBtn = document.getElementById('addTruth');
         if (addTruthBtn) {
@@ -692,11 +890,26 @@ class HomilyGeneratorUI {
             });
         }
 
-        // BOUTON DE GÉNÉRATION EN HAUT - MAINTENANT BIEN VISIBLE
+        // BOUTON DE GÉNÉRATION EN HAUT
         const generateBtn = document.getElementById('generate');
         if (generateBtn) {
             generateBtn.addEventListener('click', () => {
                 this.generateOutput();
+            });
+        }
+
+        // Boutons de sauvegarde et chargement
+        const saveBtn = document.getElementById('saveSermon');
+        if (saveBtn) {
+            saveBtn.addEventListener('click', () => {
+                this.saveSermon();
+            });
+        }
+
+        const loadBtn = document.getElementById('loadSermon');
+        if (loadBtn) {
+            loadBtn.addEventListener('click', () => {
+                this.openLoadSermonModal();
             });
         }
     }
@@ -706,6 +919,7 @@ class HomilyGeneratorUI {
         const closeBtn = modal.querySelector('.close');
         const cancelBtn = document.getElementById('cancel-verse-selection');
         const confirmBtn = document.getElementById('confirm-verse-selection');
+        const insertBtn = document.getElementById('insert-verse-text');
         const bookSelect = document.getElementById('verse-book-select');
         const chapterSelect = document.getElementById('verse-chapter-select');
 
@@ -720,6 +934,10 @@ class HomilyGeneratorUI {
 
         confirmBtn.addEventListener('click', () => {
             this.confirmVerseSelection();
+        });
+
+        insertBtn.addEventListener('click', () => {
+            this.insertVerseText();
         });
 
         // Changement de livre
@@ -755,6 +973,21 @@ class HomilyGeneratorUI {
 
         // Initialiser avec Genèse
         this.loadChaptersForBook('Genesisy');
+    }
+
+    initializeLoadSermonModal() {
+        const modal = document.getElementById('load-sermon-modal');
+        const closeBtn = modal.querySelector('.close');
+        
+        closeBtn.addEventListener('click', () => {
+            modal.style.display = 'none';
+        });
+
+        window.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                modal.style.display = 'none';
+            }
+        });
     }
 
     async loadChaptersForBook(book) {
@@ -886,9 +1119,36 @@ class HomilyGeneratorUI {
         return html || '<div class="verse-text-item">Aucun texte disponible pour cette plage</div>';
     }
 
-    openVerseSelection(targetField) {
-        this.currentVerseTarget = targetField;
-        document.getElementById('verse-selection-modal').style.display = 'block';
+    openVerseSelection() {
+        const modal = document.getElementById('verse-selection-modal');
+        const modeIndicator = document.getElementById('verse-mode-indicator');
+        const insertBtn = document.getElementById('insert-verse-text');
+        const confirmBtn = document.getElementById('confirm-verse-selection');
+        
+        // Mode normal (sélection)
+        if (modeIndicator) modeIndicator.textContent = "";
+        if (insertBtn) insertBtn.style.display = 'none';
+        if (confirmBtn) confirmBtn.style.display = 'inline-block';
+        
+        modal.style.display = 'block';
+    }
+
+    openVerseInsertion(textarea, truthIndex = null, fieldName = null) {
+        this.currentTextarea = textarea;
+        this.currentTruthIndex = truthIndex;
+        this.currentFieldName = fieldName;
+        this.currentVerseTarget = 'insert';
+        
+        const modal = document.getElementById('verse-selection-modal');
+        const modeIndicator = document.getElementById('verse-mode-indicator');
+        const insertBtn = document.getElementById('insert-verse-text');
+        const confirmBtn = document.getElementById('confirm-verse-selection');
+        
+        if (modeIndicator) modeIndicator.textContent = "(Mode insertion)";
+        if (insertBtn) insertBtn.style.display = 'inline-block';
+        if (confirmBtn) confirmBtn.style.display = 'none';
+        
+        modal.style.display = 'block';
     }
 
     confirmVerseSelection() {
@@ -927,6 +1187,56 @@ class HomilyGeneratorUI {
         }
         
         document.getElementById('verse-selection-modal').style.display = 'none';
+    }
+
+    insertVerseText() {
+        if (!this.currentTextarea) return;
+
+        // Utiliser les noms de livres dans la langue sélectionnée
+        const bookName = this.state.lang === 'mg' ? 
+            bookNames.malagasy[this.currentBook] : 
+            bookNames.french[this.currentBook];
+        
+        let verseRef;
+        if (this.currentFromVerse === this.currentToVerse) {
+            verseRef = `${bookName} ${this.currentChapter}:${this.currentFromVerse}`;
+        } else {
+            verseRef = `${bookName} ${this.currentChapter}:${this.currentFromVerse}-${this.currentToVerse}`;
+        }
+
+        // Récupérer le texte des versets
+        let versesText = '';
+        for (let verseNum = this.currentFromVerse; verseNum <= this.currentToVerse; verseNum++) {
+            if (this.currentVersesData[verseNum]) {
+                versesText += `${verseNum} ${this.currentVersesData[verseNum]}\n`;
+            }
+        }
+
+        // Formater le texte à insérer
+        const textToInsert = `\n[${verseRef}]\n${versesText}\n`;
+
+        // Insérer à la position du curseur
+        const startPos = this.currentTextarea.selectionStart;
+        const endPos = this.currentTextarea.selectionEnd;
+        const textBefore = this.currentTextarea.value.substring(0, startPos);
+        const textAfter = this.currentTextarea.value.substring(endPos, this.currentTextarea.value.length);
+
+        this.currentTextarea.value = textBefore + textToInsert + textAfter;
+        
+        // Mettre à jour le state si c'est un champ d'une vérité
+        if (this.currentTruthIndex !== null && this.currentFieldName) {
+            this.state.truths[this.currentTruthIndex][this.currentFieldName] = this.currentTextarea.value;
+        } else if (this.currentFieldName === 'conclusionNotes') {
+            this.state.conclusionNotes = this.currentTextarea.value;
+        }
+
+        // Fermer la modal
+        document.getElementById('verse-selection-modal').style.display = 'none';
+        
+        // Réinitialiser
+        this.currentTextarea = null;
+        this.currentTruthIndex = null;
+        this.currentFieldName = null;
     }
 
     updatePericopeDisplay() {
@@ -968,6 +1278,7 @@ class HomilyGeneratorUI {
 
             <label>${t.lblKey}
                 <textarea class="inp wide-input keyStatement" placeholder="${t.phKey}">${truth.keyStatement || ''}</textarea>
+                <button type="button" class="insert-verse-btn" data-field="keyStatement" data-index="${idx}">${t.insertVerse}</button>
             </label>
 
             <label>${t.lblVerses}
@@ -985,40 +1296,48 @@ class HomilyGeneratorUI {
 
             <label>${t.lblExplain}
                 <textarea class="inp wide-input explanation" placeholder="${t.explainLead} ...">${truth.explanation || ''}</textarea>
+                <button type="button" class="insert-verse-btn" data-field="explanation" data-index="${idx}">${t.insertVerse}</button>
             </label>
 
             <fieldset class="app-fieldset">
                 <legend>${t.lblApp(t.appDimsLabel)}</legend>
                 <div class="dimension-row">
                     <input class="inp wide-input appD1" placeholder="${t.phD1}" value="${truth.appD1 || ''}" />
+                    <button type="button" class="insert-verse-btn" data-field="appD1" data-index="${idx}">${t.insertVerse}</button>
                     <button type="button" class="btn-small btn-danger remove-dimension" data-dim="1" data-index="${idx}">${t.removeDim}</button>
                 </div>
                 <div class="dimension-row">
                     <input class="inp wide-input appD2" placeholder="${t.phD2}" value="${truth.appD2 || ''}" />
+                    <button type="button" class="insert-verse-btn" data-field="appD2" data-index="${idx}">${t.insertVerse}</button>
                     <button type="button" class="btn-small btn-danger remove-dimension" data-dim="2" data-index="${idx}">${t.removeDim}</button>
                 </div>
                 <div class="dimension-row">
                     <input class="inp wide-input appD3" placeholder="${t.phD3}" value="${truth.appD3 || ''}" />
+                    <button type="button" class="insert-verse-btn" data-field="appD3" data-index="${idx}">${t.insertVerse}</button>
                     <button type="button" class="btn-small btn-danger remove-dimension" data-dim="3" data-index="${idx}">${t.removeDim}</button>
                 </div>
             </fieldset>
 
             <label>${t.lblReflect}
                 <textarea class="inp wide-input reflection" placeholder="${t.reflectLead} …">${truth.reflection || ''}</textarea>
+                <button type="button" class="insert-verse-btn" data-field="reflection" data-index="${idx}">${t.insertVerse}</button>
             </label>
 
             <label>${t.lblExhort}
                 <textarea class="inp wide-input exhortation" placeholder="${t.exhortLead} …">${truth.exhortation || ''}</textarea>
+                <button type="button" class="insert-verse-btn" data-field="exhortation" data-index="${idx}">${t.insertVerse}</button>
             </label>
 
             <label>${t.lblChrist}
                 <textarea class="inp wide-input christology" placeholder="${t.christLead} …">${truth.christology || ''}</textarea>
+                <button type="button" class="insert-verse-btn" data-field="christology" data-index="${idx}">${t.insertVerse}</button>
             </label>
 
             <!-- Notes intercalaires pour chaque vérité -->
             <details class="note intercalary-notes">
                 <summary>Notes intercalaires (facultatif)</summary>
                 <textarea class="inp wide-input intercalaryNotes" placeholder="Notes supplémentaires pour cette vérité...">${truth.intercalaryNotes || ''}</textarea>
+                <button type="button" class="insert-verse-btn" data-field="intercalaryNotes" data-index="${idx}">${t.insertVerse}</button>
             </details>
         `;
 
@@ -1041,6 +1360,18 @@ class HomilyGeneratorUI {
                 this.openVerseSelectionForTruth(index);
             });
         }
+
+        // Boutons d'insertion de versets
+        wrap.querySelectorAll('.insert-verse-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const index = parseInt(e.target.dataset.index);
+                const field = e.target.dataset.field;
+                const textarea = wrap.querySelector(`.${field}`);
+                if (textarea) {
+                    this.openVerseInsertion(textarea, index, field);
+                }
+            });
+        });
 
         // Boutons de suppression des dimensions
         wrap.querySelectorAll('.remove-dimension').forEach(btn => {
@@ -1082,7 +1413,7 @@ class HomilyGeneratorUI {
 
     openVerseSelectionForTruth(truthIndex) {
         this.currentVerseTarget = `truth-${truthIndex}-verses`;
-        this.openVerseSelection(this.currentVerseTarget);
+        this.openVerseSelection();
     }
 
     rerenderTruths() {
@@ -1107,10 +1438,24 @@ class HomilyGeneratorUI {
         // Boutons
         const addBtn = document.getElementById('addTruth');
         const genBtn = document.getElementById('generate');
+        const saveBtn = document.getElementById('saveSermon');
+        const loadBtn = document.getElementById('loadSermon');
         if (addBtn) addBtn.textContent = t.uiAddTruth;
         if (genBtn) genBtn.textContent = t.uiGenerate;
+        if (saveBtn) saveBtn.textContent = t.saveSermon;
+        if (loadBtn) loadBtn.textContent = t.loadSermon;
         
-        // Mettre à jour les placeholders et labels
+        // Labels
+        const sermonTitleLabel = document.querySelector('.sermon-title-section label');
+        if (sermonTitleLabel) sermonTitleLabel.innerHTML = t.sermonTitle;
+        
+        const pericopeTitle = document.querySelector('.pericope-section h3');
+        if (pericopeTitle) pericopeTitle.textContent = t.uiPericope;
+        
+        const addVerseBtn = document.getElementById('select-pericope');
+        if (addVerseBtn) addVerseBtn.textContent = t.selectVerses;
+        
+        // Mettre à jour les placeholders et labels des parties
         this.rerenderTruths();
         
         // Mettre à jour les options des livres
@@ -1118,6 +1463,138 @@ class HomilyGeneratorUI {
         if (bookSelect) {
             bookSelect.innerHTML = this.getBookOptions();
             bookSelect.value = this.currentBook;
+        }
+    }
+
+    // MÉTHODES DE SAUVEGARDE
+    async saveSermon() {
+        if (!bibleAppInstance.currentUser) {
+            bibleAppInstance.showMessage('Veuillez vous connecter pour sauvegarder', 'error');
+            bibleAppInstance.openAuthModal('login');
+            return;
+        }
+
+        if (!this.state.sermonTitle.trim()) {
+            bibleAppInstance.showMessage('Veuillez donner un titre à votre homélie', 'error');
+            return;
+        }
+
+        try {
+            const sermonData = {
+                type: 'homily',
+                title: this.state.sermonTitle,
+                content: this.state,
+                language: this.state.lang
+            };
+
+            if (this.state.id) {
+                sermonData.id = this.state.id;
+            }
+
+            const savedSermon = await saveSermon(bibleAppInstance.supabase, sermonData);
+            this.state.id = savedSermon.id;
+            
+            bibleAppInstance.showMessage('Homélie sauvegardée avec succès', 'success');
+        } catch (error) {
+            console.error('Erreur lors de la sauvegarde:', error);
+            bibleAppInstance.showMessage('Erreur lors de la sauvegarde', 'error');
+        }
+    }
+
+    async openLoadSermonModal() {
+        if (!bibleAppInstance.currentUser) {
+            bibleAppInstance.showMessage('Veuillez vous connecter pour charger vos homélies', 'error');
+            bibleAppInstance.openAuthModal('login');
+            return;
+        }
+
+        try {
+            this.savedSermons = await getUserSermons(bibleAppInstance.supabase, 'homily');
+            this.renderSermonsList();
+            document.getElementById('load-sermon-modal').style.display = 'block';
+        } catch (error) {
+            console.error('Erreur lors du chargement des homélies:', error);
+            bibleAppInstance.showMessage('Erreur lors du chargement des homélies', 'error');
+        }
+    }
+
+    renderSermonsList() {
+        const t = this.T();
+        const listContainer = document.getElementById('sermons-list');
+        
+        if (this.savedSermons.length === 0) {
+            listContainer.innerHTML = `<p class="no-sermons">${t.noSavedSermons}</p>`;
+            return;
+        }
+
+        listContainer.innerHTML = this.savedSermons.map(sermon => `
+            <div class="sermon-item">
+                <div class="sermon-info">
+                    <div class="sermon-title">${sermon.title}</div>
+                    <div class="sermon-date">${new Date(sermon.created_at).toLocaleDateString()} - ${sermon.language.toUpperCase()}</div>
+                </div>
+                <div class="sermon-actions">
+                    <button type="button" class="btn-small btn-primary load-sermon" data-id="${sermon.id}">${t.load}</button>
+                    <button type="button" class="btn-small btn-danger delete-sermon" data-id="${sermon.id}">${t.deleteSermon}</button>
+                </div>
+            </div>
+        `).join('');
+
+        // Événements pour charger et supprimer
+        listContainer.querySelectorAll('.load-sermon').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const sermonId = e.target.dataset.id;
+                this.loadSermon(sermonId);
+            });
+        });
+
+        listContainer.querySelectorAll('.delete-sermon').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const sermonId = e.target.dataset.id;
+                this.deleteSermon(sermonId);
+            });
+        });
+    }
+
+    async loadSermon(sermonId) {
+        try {
+            const sermon = this.savedSermons.find(s => s.id === sermonId);
+            if (sermon) {
+                this.state = { ...sermon.content, id: sermon.id };
+                this.state.sermonTitle = sermon.title;
+                
+                // Mettre à jour l'interface
+                document.getElementById('sermonTitle').value = this.state.sermonTitle;
+                document.getElementById('pericopeRef').value = this.state.pericopeRef;
+                document.getElementById('pericopeSummary').value = this.state.pericopeSummary;
+                document.getElementById('conclusionNotes').value = this.state.conclusionNotes;
+                document.getElementById('langSelect').value = this.state.lang;
+                
+                this.rerenderTruths();
+                this.updatePericopeDisplay();
+                
+                document.getElementById('load-sermon-modal').style.display = 'none';
+                bibleAppInstance.showMessage('Homélie chargée avec succès', 'success');
+            }
+        } catch (error) {
+            console.error('Erreur lors du chargement:', error);
+            bibleAppInstance.showMessage('Erreur lors du chargement de l\'homélie', 'error');
+        }
+    }
+
+    async deleteSermon(sermonId) {
+        if (!confirm('Voulez-vous vraiment supprimer cette homélie ?')) {
+            return;
+        }
+
+        try {
+            await deleteSermon(bibleAppInstance.supabase, sermonId);
+            this.savedSermons = this.savedSermons.filter(s => s.id !== sermonId);
+            this.renderSermonsList();
+            bibleAppInstance.showMessage('Homélie supprimée avec succès', 'success');
+        } catch (error) {
+            console.error('Erreur lors de la suppression:', error);
+            bibleAppInstance.showMessage('Erreur lors de la suppression', 'error');
         }
     }
 
@@ -1163,7 +1640,7 @@ class HomilyGeneratorUI {
         const lines = [];
         
         // Titre + Introduction
-        lines.push(`# ${t.uiTitle}\n`);
+        lines.push(`# ${this.state.theme || t.uiTitle}\n`);
         lines.push(`**${this.state.lang === 'mg' ? 'Fampidirana' : 'Introduction'}**`);
         lines.push(`${t.introGreeting}`);
         
