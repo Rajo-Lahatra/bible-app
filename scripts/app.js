@@ -495,7 +495,7 @@ class BibleApp {
         }, 100);
     }
 
-    // NOUVELLE MÉTHODE : Modal "Mes prédications"
+    // MÉTHODE CORRIGÉE : Modal "Mes prédications"
     initializeMySermonsModal() {
         // Créer la modale si elle n'existe pas
         if (!document.getElementById('my-sermons-modal')) {
@@ -513,10 +513,10 @@ class BibleApp {
                     </div>
                     
                     <div class="sermons-content">
-                        <div id="homilies-list" class="sermon-list active">
+                        <div id="homily-list" class="sermon-list active">
                             <!-- Liste des homélies -->
                         </div>
-                        <div id="free-sermons-list" class="sermon-list">
+                        <div id="free-sermon-list" class="sermon-list">
                             <!-- Liste des prédications libres -->
                         </div>
                     </div>
@@ -525,23 +525,52 @@ class BibleApp {
             document.body.appendChild(modal);
 
             // Événements pour la modale
-            modal.querySelector('.close').addEventListener('click', () => {
-                modal.style.display = 'none';
-                document.body.style.overflow = 'auto';
-            });
+            const closeBtn = modal.querySelector('.close');
+            if (closeBtn) {
+                closeBtn.addEventListener('click', () => {
+                    modal.style.display = 'none';
+                    document.body.style.overflow = 'auto';
+                });
+            }
 
-            // Événements pour les onglets
-            modal.querySelectorAll('.sermon-tab').forEach(tab => {
+            // ÉVÉNEMENTS CORRIGÉS POUR LES ONGLETS
+            const tabs = modal.querySelectorAll('.sermon-tab');
+            tabs.forEach(tab => {
                 tab.addEventListener('click', (e) => {
-                    const type = e.target.dataset.type;
+                    const target = e.currentTarget; // Utiliser currentTarget au lieu de target
+                    const type = target.dataset.type;
+                    
+                    if (!type) {
+                        console.error('Type d\'onglet non défini');
+                        return;
+                    }
                     
                     // Mettre à jour les onglets actifs
-                    modal.querySelectorAll('.sermon-tab').forEach(t => t.classList.remove('active'));
-                    modal.querySelectorAll('.sermon-list').forEach(list => list.classList.remove('active'));
+                    tabs.forEach(t => t.classList.remove('active'));
+                    modal.querySelectorAll('.sermon-list').forEach(list => {
+                        list.classList.remove('active');
+                    });
                     
-                    e.target.classList.add('active');
-                    document.getElementById(`${type}-list`).classList.add('active');
+                    target.classList.add('active');
+                    
+                    // Trouver la liste cible
+                    const targetListId = `${type}-list`;
+                    const targetList = document.getElementById(targetListId);
+                    
+                    if (targetList) {
+                        targetList.classList.add('active');
+                    } else {
+                        console.error(`Liste non trouvée: ${targetListId}`);
+                    }
                 });
+            });
+
+            // Fermeture en cliquant à l'extérieur
+            window.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    modal.style.display = 'none';
+                    document.body.style.overflow = 'auto';
+                }
             });
         }
     }
@@ -564,17 +593,17 @@ class BibleApp {
         if (!this.supabase || !this.currentUser) return;
 
         try {
-            // Charger les homélies
+            // Charger les homélies - CORRECTION : utiliser 'homily-list' au lieu de 'homilies-list'
             const homilies = await getUserSermons(this.supabase, 'homily');
-            this.displaySermonsList(homilies, 'homilies-list', 'homily');
+            this.displaySermonsList(homilies, 'homily-list', 'homily');
             
-            // Charger les prédications libres (si la fonction existe)
+            // Charger les prédications libres
             try {
                 const freeSermons = await getUserSermons(this.supabase, 'free-sermon');
-                this.displaySermonsList(freeSermons, 'free-sermons-list', 'free-sermon');
+                this.displaySermonsList(freeSermons, 'free-sermon-list', 'free-sermon');
             } catch (error) {
                 console.log('Fonction pour prédications libres non disponible');
-                document.getElementById('free-sermons-list').innerHTML = '<p class="no-sermons">Aucune prédication libre sauvegardée</p>';
+                document.getElementById('free-sermon-list').innerHTML = '<p class="no-sermons">Aucune prédication libre sauvegardée</p>';
             }
         } catch (error) {
             console.error('Erreur lors du chargement des prédications:', error);
@@ -584,7 +613,10 @@ class BibleApp {
 
     displaySermonsList(sermons, listId, type) {
         const listContainer = document.getElementById(listId);
-        if (!listContainer) return;
+        if (!listContainer) {
+            console.error(`Conteneur non trouvé: ${listId}`);
+            return;
+        }
 
         if (sermons.length === 0) {
             listContainer.innerHTML = `<p class="no-sermons">Aucune ${type === 'homily' ? 'homélie' : 'prédication'} sauvegardée</p>`;
