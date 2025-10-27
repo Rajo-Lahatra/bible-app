@@ -1235,3 +1235,76 @@ textarea, input[type="text"] {
         padding: 1rem;
     }
 }
+/* Styles pour la modale Mes prédications */
+.sermons-tabs {
+    display: flex;
+    border-bottom: 1px solid #ddd;
+    margin-bottom: 1rem;
+}
+
+.sermon-tab {
+    padding: 0.75rem 1.5rem;
+    background: none;
+    border: none;
+    border-bottom: 2px solid transparent;
+    cursor: pointer;
+    font-size: 0.9rem;
+}
+
+.sermon-tab.active {
+    border-bottom-color: #007bff;
+    color: #007bff;
+    font-weight: bold;
+}
+
+.sermon-list {
+    display: none;
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.sermon-list.active {
+    display: block;
+}
+
+.sermon-item {
+    padding: 1rem;
+    margin-bottom: 0.5rem;
+    background: #f8f9fa;
+    border-radius: 6px;
+    border: 1px solid #dee2e6;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.sermon-info {
+    flex: 1;
+}
+
+.sermon-title {
+    font-weight: bold;
+    color: #2c5aa0;
+    margin-bottom: 0.25rem;
+}
+
+.sermon-meta {
+    font-size: 0.8rem;
+    color: #6c757d;
+}
+
+.sermon-meta span {
+    margin-right: 1rem;
+}
+
+.sermon-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.no-sermons {
+    text-align: center;
+    padding: 2rem;
+    color: #6c757d;
+    font-style: italic;
+}

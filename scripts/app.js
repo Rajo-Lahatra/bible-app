@@ -21,7 +21,10 @@ import {
     signOut,
     deleteComment,
     updateComment,
-    deleteHighlight
+    deleteHighlight,
+    saveSermon,
+    getUserSermons,
+    deleteSermon
 } from './supabase-client.js';
 import { initHomilyGenerator } from './homily-generator.js';
 import { initFreeSermonGenerator } from './free-sermon-generator.js';
@@ -302,6 +305,20 @@ class BibleApp {
             authButtons.style.display = 'none';
             userMenu.style.display = 'flex';
             userEmail.textContent = this.currentUser.email;
+            
+            // Ajouter le bouton "Mes prédications" s'il n'existe pas
+            if (!document.getElementById('my-sermons-btn')) {
+                const mySermonsBtn = document.createElement('button');
+                mySermonsBtn.id = 'my-sermons-btn';
+                mySermonsBtn.className = 'auth-btn';
+                mySermonsBtn.textContent = 'Mes prédications';
+                userMenu.insertBefore(mySermonsBtn, userMenu.querySelector('#my-annotations-btn'));
+                
+                // Ajouter l'événement click
+                mySermonsBtn.addEventListener('click', () => {
+                    this.openMySermonsModal();
+                });
+            }
         } else {
             authButtons.style.display = 'flex';
             userMenu.style.display = 'none';
@@ -334,6 +351,10 @@ class BibleApp {
             }
             if (e.target.id === 'free-sermon-section') {
                 document.getElementById('free-sermon-section').style.display = 'none';
+                document.body.style.overflow = 'auto';
+            }
+            if (e.target.id === 'my-sermons-modal') {
+                document.getElementById('my-sermons-modal').style.display = 'none';
                 document.body.style.overflow = 'auto';
             }
         });
@@ -410,6 +431,7 @@ class BibleApp {
         this.initializeAuthModal();
         this.initializeAnnotationsModal();
         this.initializeEditCommentModal();
+        this.initializeMySermonsModal();
     }
 
     openHomilyTool() {
@@ -471,6 +493,179 @@ class BibleApp {
                 this.showMessage('Erreur lors du chargement de l\'outil sermon libre', 'error');
             }
         }, 100);
+    }
+
+    // NOUVELLE MÉTHODE : Modal "Mes prédications"
+    initializeMySermonsModal() {
+        // Créer la modale si elle n'existe pas
+        if (!document.getElementById('my-sermons-modal')) {
+            const modal = document.createElement('div');
+            modal.id = 'my-sermons-modal';
+            modal.className = 'modal';
+            modal.innerHTML = `
+                <div class="modal-content" style="max-width: 800px;">
+                    <span class="close">&times;</span>
+                    <h3>Mes prédications</h3>
+                    
+                    <div class="sermons-tabs">
+                        <button class="sermon-tab active" data-type="homily">Homélies</button>
+                        <button class="sermon-tab" data-type="free-sermon">Prédications libres</button>
+                    </div>
+                    
+                    <div class="sermons-content">
+                        <div id="homilies-list" class="sermon-list active">
+                            <!-- Liste des homélies -->
+                        </div>
+                        <div id="free-sermons-list" class="sermon-list">
+                            <!-- Liste des prédications libres -->
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+
+            // Événements pour la modale
+            modal.querySelector('.close').addEventListener('click', () => {
+                modal.style.display = 'none';
+                document.body.style.overflow = 'auto';
+            });
+
+            // Événements pour les onglets
+            modal.querySelectorAll('.sermon-tab').forEach(tab => {
+                tab.addEventListener('click', (e) => {
+                    const type = e.target.dataset.type;
+                    
+                    // Mettre à jour les onglets actifs
+                    modal.querySelectorAll('.sermon-tab').forEach(t => t.classList.remove('active'));
+                    modal.querySelectorAll('.sermon-list').forEach(list => list.classList.remove('active'));
+                    
+                    e.target.classList.add('active');
+                    document.getElementById(`${type}-list`).classList.add('active');
+                });
+            });
+        }
+    }
+
+    async openMySermonsModal() {
+        if (!this.currentUser) {
+            this.showMessage('Veuillez vous connecter pour voir vos prédications', 'error');
+            this.openAuthModal('login');
+            return;
+        }
+
+        // Créer ou afficher la modale des prédications
+        this.initializeMySermonsModal();
+        await this.loadMySermons();
+        document.getElementById('my-sermons-modal').style.display = 'block';
+        document.body.style.overflow = 'hidden';
+    }
+
+    async loadMySermons() {
+        if (!this.supabase || !this.currentUser) return;
+
+        try {
+            // Charger les homélies
+            const homilies = await getUserSermons(this.supabase, 'homily');
+            this.displaySermonsList(homilies, 'homilies-list', 'homily');
+            
+            // Charger les prédications libres (si la fonction existe)
+            try {
+                const freeSermons = await getUserSermons(this.supabase, 'free-sermon');
+                this.displaySermonsList(freeSermons, 'free-sermons-list', 'free-sermon');
+            } catch (error) {
+                console.log('Fonction pour prédications libres non disponible');
+                document.getElementById('free-sermons-list').innerHTML = '<p class="no-sermons">Aucune prédication libre sauvegardée</p>';
+            }
+        } catch (error) {
+            console.error('Erreur lors du chargement des prédications:', error);
+            this.showMessage('Erreur lors du chargement des prédications', 'error');
+        }
+    }
+
+    displaySermonsList(sermons, listId, type) {
+        const listContainer = document.getElementById(listId);
+        if (!listContainer) return;
+
+        if (sermons.length === 0) {
+            listContainer.innerHTML = `<p class="no-sermons">Aucune ${type === 'homily' ? 'homélie' : 'prédication'} sauvegardée</p>`;
+            return;
+        }
+
+        listContainer.innerHTML = sermons.map(sermon => `
+            <div class="sermon-item">
+                <div class="sermon-info">
+                    <div class="sermon-title">${sermon.title}</div>
+                    <div class="sermon-meta">
+                        <span class="sermon-date">${new Date(sermon.created_at).toLocaleDateString()}</span>
+                        <span class="sermon-language">${sermon.language.toUpperCase()}</span>
+                        <span class="sermon-type">${type === 'homily' ? 'Homélie' : 'Prédication libre'}</span>
+                    </div>
+                </div>
+                <div class="sermon-actions">
+                    <button type="button" class="btn-small btn-primary open-sermon" data-id="${sermon.id}" data-type="${type}">
+                        ${type === 'homily' ? 'Ouvrir' : 'Ouvrir'}
+                    </button>
+                    <button type="button" class="btn-small btn-danger delete-sermon" data-id="${sermon.id}" data-type="${type}">
+                        Supprimer
+                    </button>
+                </div>
+            </div>
+        `).join('');
+
+        // Événements pour ouvrir et supprimer
+        listContainer.querySelectorAll('.open-sermon').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const sermonId = e.target.dataset.id;
+                const sermonType = e.target.dataset.type;
+                this.openSermon(sermonId, sermonType);
+            });
+        });
+
+        listContainer.querySelectorAll('.delete-sermon').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const sermonId = e.target.dataset.id;
+                const sermonType = e.target.dataset.type;
+                this.deleteSermon(sermonId, sermonType);
+            });
+        });
+    }
+
+    openSermon(sermonId, type) {
+        if (type === 'homily') {
+            // Fermer la modale actuelle
+            document.getElementById('my-sermons-modal').style.display = 'none';
+            document.body.style.overflow = 'auto';
+            
+            // Ouvrir l'outil homélie avec la prédication chargée
+            this.openHomilyTool();
+            
+            // Charger l'homélie spécifique (à implémenter dans homily-generator.js)
+            setTimeout(() => {
+                const homilyGenerator = document.querySelector('#homily-generator');
+                if (homilyGenerator && homilyGenerator.__homilyInstance) {
+                    homilyGenerator.__homilyInstance.loadSermonById(sermonId);
+                }
+            }, 500);
+        } else if (type === 'free-sermon') {
+            // Similaire pour les prédications libres
+            console.log('Ouvrir prédication libre:', sermonId);
+            // Implémenter l'ouverture des prédications libres
+        }
+    }
+
+    async deleteSermon(sermonId, type) {
+        if (!confirm('Voulez-vous vraiment supprimer cette prédication ?')) {
+            return;
+        }
+
+        try {
+            await deleteSermon(this.supabase, sermonId);
+            this.showMessage('Prédication supprimée avec succès', 'success');
+            await this.loadMySermons(); // Recharger la liste
+        } catch (error) {
+            console.error('Erreur lors de la suppression:', error);
+            this.showMessage('Erreur lors de la suppression', 'error');
+        }
     }
 
     initializeAuthModal() {

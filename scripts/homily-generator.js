@@ -568,10 +568,10 @@ class HomilyGeneratorUI {
                     gap: 0.5rem;
                 }
 
-                /* CHAMPS DE DIMENSIONS AVEC LA MÊME LARGEUR */
+                /* CHAMPS DE DIMENSIONS EN TEXTAREA POUR MEILLEURE LISIBILITÉ */
                 .dimension-row {
                     display: flex;
-                    align-items: center;
+                    align-items: flex-start;
                     gap: 0.5rem;
                     margin-bottom: 0.5rem;
                     width: 100%;
@@ -580,6 +580,8 @@ class HomilyGeneratorUI {
                 .dimension-row .inp {
                     flex: 1;
                     width: 100% !important;
+                    min-height: 60px;
+                    resize: vertical;
                 }
 
                 .remove-dimension {
@@ -590,6 +592,7 @@ class HomilyGeneratorUI {
                     align-items: center;
                     justify-content: center;
                     flex-shrink: 0;
+                    margin-top: 0.5rem;
                 }
 
                 .insert-verse-btn {
@@ -603,6 +606,7 @@ class HomilyGeneratorUI {
                     cursor: pointer;
                     transition: background 0.3s;
                     flex-shrink: 0;
+                    margin-top: 0.5rem;
                 }
 
                 .insert-verse-btn:hover {
@@ -1289,17 +1293,17 @@ class HomilyGeneratorUI {
             <fieldset class="app-fieldset">
                 <legend>${t.lblApp(t.appDimsLabel)}</legend>
                 <div class="dimension-row">
-                    <input class="inp wide-input appD1" placeholder="${t.phD1}" value="${truth.appD1 || ''}" />
+                    <textarea class="inp wide-input appD1" placeholder="${t.phD1}" rows="3">${truth.appD1 || ''}</textarea>
                     <button type="button" class="insert-verse-btn" data-field="appD1" data-index="${idx}">${t.insertVerse}</button>
                     <button type="button" class="btn-small btn-danger remove-dimension" data-dim="1" data-index="${idx}">${t.removeDim}</button>
                 </div>
                 <div class="dimension-row">
-                    <input class="inp wide-input appD2" placeholder="${t.phD2}" value="${truth.appD2 || ''}" />
+                    <textarea class="inp wide-input appD2" placeholder="${t.phD2}" rows="3">${truth.appD2 || ''}</textarea>
                     <button type="button" class="insert-verse-btn" data-field="appD2" data-index="${idx}">${t.insertVerse}</button>
                     <button type="button" class="btn-small btn-danger remove-dimension" data-dim="2" data-index="${idx}">${t.removeDim}</button>
                 </div>
                 <div class="dimension-row">
-                    <input class="inp wide-input appD3" placeholder="${t.phD3}" value="${truth.appD3 || ''}" />
+                    <textarea class="inp wide-input appD3" placeholder="${t.phD3}" rows="3">${truth.appD3 || ''}</textarea>
                     <button type="button" class="insert-verse-btn" data-field="appD3" data-index="${idx}">${t.insertVerse}</button>
                     <button type="button" class="btn-small btn-danger remove-dimension" data-dim="3" data-index="${idx}">${t.removeDim}</button>
                 </div>
